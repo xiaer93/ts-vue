@@ -27,7 +27,7 @@ class Watch {
   }
   addDep(dep: Dep) {
     // console.log(dep)
-    this.deps.push(dep)
+    !this.deps.includes(dep) && this.deps.push(dep)
     dep.addWatch(this)
   }
   update() {

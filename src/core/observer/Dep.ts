@@ -12,20 +12,22 @@ class Dep {
   constructor() {
     this.watches = []
   }
-  addWatch(watch) {
-    this.watches.push(watch)
+  addWatch(watch: Watch) {
+    !this.watches.includes(watch) && this.watches.push(watch)
   }
   depend() {
     Dep.Target && Dep.Target.addDep(this)
   }
   notify() {
+    // debugger
+    console.log([...this.watches])
     this.watches.forEach(v => {
       v.update()
     })
   }
 }
 
-export function pushTarget(watch) {
+export function pushTarget(watch: Watch) {
   Dep.Target && targetPool.push(Dep.Target)
   Dep.Target = watch
 }

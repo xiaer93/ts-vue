@@ -1,16 +1,17 @@
 import { CreateElement, VueConfig, VNode } from '../type/index'
 import { createElement } from './vnode'
-import Observe from './Obersve'
-import patch from './patch'
+import Observe from './observer/Obersve'
+import patch from '../web/index'
 import webMethods from '../web/dom'
-import Dep from './dep'
+import Dep from './observer/Dep'
 import Watch from './watch'
 import { noop } from '../helper/utils'
+import { isPrimitive } from 'util'
 
-export default class Vue {
+class Vue {
   private el: string
   private render: (h: CreateElement) => VNode
-  private _data?: any
+  public _data?: any
   private _vnode: VNode | null | undefined
 
   constructor(config: VueConfig) {
@@ -19,10 +20,7 @@ export default class Vue {
 
     this._data = config.data && config.data()
 
-    setProxy(this, '_data', this._data)
     this.initData()
-
-    this._init()
   }
   _init() {
     let oldVnode: VNode | null = createNodeAt(this.el)
@@ -33,16 +31,14 @@ export default class Vue {
     } else {
       const self = this
       const updateComponent = () => {
-        self._render(self._update.bind(this))
+        self._update(self._render())
       }
       new Watch(this, updateComponent, noop)
     }
   }
-  _render(cb) {
-    console.log('nnnnnnn', this.name, this._data._ob.name)
+  _render(): VNode {
     let vnode: VNode = this.render(createElement)
-    console.log(vnode)
-    cb(vnode)
+    return vnode
   }
   _update(vnode: VNode) {
     let oldVnode: VNode = this._vnode!
@@ -50,9 +46,13 @@ export default class Vue {
     patch(oldVnode, vnode)
   }
   initData() {
-    if (!this._data) return
-    // let ob = this._data._ob || new Observe(this)
-    this._data._ob = defineKey(this._data)
+    if (!this._data || this._data._ob) return
+
+    for (let key in this._data) {
+      this._data[key] = defineKey(this._data[key])
+    }
+
+    // this._data._ob =
   }
 }
 
@@ -67,12 +67,20 @@ function createNodeAt(selectorText: string): VNode | null {
   }
 }
 
+// 将data设为响应式的，data可以为数组、对象
+// proxy对象，所有的操作都会被拦截
+
+// 对数组 [].push(1)，会触发2次set，key为0， length
 function defineKey(data: any) {
   let dep = new Dep()
+  dep.v = data
 
-  return new Proxy(data, {
+  let proxyData = new Proxy(data, {
     get(target, key, receiver) {
-      Dep.Target && dep.depend()
+      if (Dep.Target) {
+        // fixme: 如何避免数组多次收集依赖？dep和watch不存储相同的对象
+        Dep.Target && dep.depend()
+      }
       return Reflect.get(target, key, receiver)
     },
     set(target, key, value, receiver) {
@@ -81,23 +89,78 @@ function defineKey(data: any) {
       return flag
     }
   })
+
+  for (let key in data) {
+    let value = data[key]
+    if (!isPrimitive(value)) {
+      data[key] = defineKey(value)
+    }
+  }
+
+  return proxyData
 }
 
 /**
  * fixme: 此处改为Proxy，如何进行？
  */
-function setProxy(vm: Vue, source: string, data: any) {
-  for (let key in data) {
-    Object.defineProperty(vm, key, {
-      get() {
-        return vm[source]['_ob'][key]
-      },
-      set(newVal) {
-        vm[source]['_ob'][key] = newVal
+function setProxy(vm: Vue) {
+  return new Proxy(vm, {
+    get(target, key, receiver) {
+      if (key in vm._data) {
+        return Reflect.get(target._data, key, receiver)
+        // target._data._ob[key]
       }
-    })
-  }
+      return Reflect.get(target, key, receiver)
+    },
+    set(target, key, value, receiver) {
+      //
+      if (key in vm._data) {
+        target._data._ob[key] = value
+        return false
+      } else {
+        return Reflect.set(target._data, key, value, receiver)
+      }
+    }
+  })
 }
+
+const ProxyVue = new Proxy(Vue, {
+  construct(target, argumentsList, newTarget) {
+    let vm = new target(...argumentsList)
+    let pvm = setProxy(vm)
+
+    console.log(pvm)
+
+    pvm._init()
+
+    return pvm
+  }
+})
+
+export default ProxyVue
+
+// const source = '_data'
+// const ProxyVue = new Proxy({}, {
+//   construct(target, argumentsList, newTarget) {
+
+//   },
+//      get (target: any, key, receiver) {
+//        if(key in target[source]) {
+//          return Reflect.get(target[source]['_ob'], key, receiver)
+//        } else {
+//          return Reflect.get(target, key, receiver)
+//        }
+//     },
+//      set(target: any, key, value, receiver) {
+//        if(key in target[source]) {
+//          return Reflect.set(target[source]['_ob'], key, value, receiver)
+//        } else {
+//          return Reflect.set(target, key, value, receiver)
+//        }
+//      }
+// })
+
+// export default ProxyVue
 
 // function setProxy(vm: Vue, source: string, data: any) {
 //   return new Proxy(vm, {

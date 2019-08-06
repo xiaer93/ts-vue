@@ -17,19 +17,23 @@ class VNode {
   }
 }
 
+/**
+ * 创建虚拟节点：子节点、文本节点、注释节点
+ */
 export function createElement(tag: string, b?: any, c?: any): VNode {
   let data, children, text
 
   if (c) {
     data = b
     b = c
-  } else {
-    if (isArray(b)) {
-      children = b
-    } else {
-      text = b
-    }
   }
 
+  if (isArray(b)) {
+    children = b
+  } else {
+    text = b
+  }
+
+  data = data || {}
   return new VNode(tag, data, children, text)
 }

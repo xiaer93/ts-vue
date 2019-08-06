@@ -1,4 +1,4 @@
-import Vue from './core'
+import Vue from '../core'
 
 /**
  * 订阅data和props？？？

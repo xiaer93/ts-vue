@@ -8,7 +8,11 @@ let v = new Vue({
     }
   },
   render (h) {
-    return h('h1', 'hello world!' + this.name)
+    return h('h1', {
+      style: {
+        color: this.name.length === 3? 'red' : '#000'
+      }
+    }, 'hello world!' + this.name)
   }
 })
 
@@ -16,5 +20,5 @@ let v = new Vue({
 window.v = v
 
 setTimeout(() => {
-  v.name = 'lly'
+  v.name = 'lly555'
 }, 2000)

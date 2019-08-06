@@ -1,0 +1,1 @@
+1. 通过patch过程，加入hook，直接对vnode.elm进行操作。添加style等等
