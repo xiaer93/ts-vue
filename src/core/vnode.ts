@@ -1,5 +1,6 @@
 import { VNodeData } from '../type/vnode'
 import { isArray } from 'util'
+import { VueInstance } from '../type'
 
 class VNode {
   tag?: string
@@ -9,11 +10,14 @@ class VNode {
   elm?: Node
   parent?: VNode
   key?: string | number
+  context: VueInstance | null
   constructor(tag: string, data: VNodeData, children?: Array<VNode>, text?: string) {
     this.tag = tag
     this.data = data
     this.children = children
     this.text = text
+
+    this.context = null
   }
 }
 
@@ -35,5 +39,7 @@ export function createElement(tag: string, b?: any, c?: any): VNode {
   }
 
   data = data || {}
-  return new VNode(tag, data, children, text)
+  const vnode = new VNode(tag, data, children, text)
+  vnode.context = createElement.context
+  return vnode
 }

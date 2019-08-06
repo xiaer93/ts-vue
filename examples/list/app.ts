@@ -25,5 +25,7 @@ let v = new Vue({
 window.v = v
 setTimeout(() => {
   // 不能直接修改v.newsma ???
+  v.news.push(9999)
   v.news.push(66666)
+  v.news[1] = '加油，ccc'
 }, 2000)

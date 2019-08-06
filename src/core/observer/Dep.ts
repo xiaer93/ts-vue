@@ -19,7 +19,6 @@ class Dep {
     Dep.Target && Dep.Target.addDep(this)
   }
   notify() {
-    // debugger
     console.log([...this.watches])
     this.watches.forEach(v => {
       v.update()

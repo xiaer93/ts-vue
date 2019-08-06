@@ -1,5 +1,5 @@
 import { VNode, Module } from '../type'
-import { isSameVnode, isDef, isUnDef } from '../helper/utils'
+import { isSameVnode, isDef } from '../helper/utils'
 import webMethods from './dom'
 import { isArray, isPrimitive } from 'util'
 import Vue from '..'
@@ -147,7 +147,7 @@ function updateChildren(parentElm: Node, oldCh: Array<VNode>, ch: Array<VNode>) 
 
   if (oldStart <= oldEnd || newStart <= newEnd) {
     if (oldStart > oldEnd) {
-      let before = isUnDef(ch[newEnd + 1]) ? null : ch[newEnd + 1].elm!
+      let before = !isDef(ch[newEnd + 1]) ? null : ch[newEnd + 1].elm!
       insertChildren(parentElm, before, ch, newStart, newEnd)
     } else {
       removeChildren(parentElm, oldCh, oldStart, oldEnd)

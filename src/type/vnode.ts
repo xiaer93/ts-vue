@@ -6,12 +6,18 @@ export interface VNode {
   elm?: Node
   parent?: VNode
   key?: string | number
+  context: VueInstance | null
 }
 
 export interface VNodeData {
   style?: any
   class?: any
+  on?: any
   [key: string]: any
+}
+
+export interface VNodeMethod {
+  [key: string]: () => void
 }
 
 export interface CreateElement {

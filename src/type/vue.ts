@@ -1,4 +1,4 @@
-import { CreateElement, VNode } from './vnode'
+import { CreateElement, VNode, VNodeMethod } from './vnode'
 
 export interface Vue {}
 
@@ -9,6 +9,7 @@ export interface VueConfig {
   render: (h: CreateElement) => VNode
 
   data: () => any
+  method?: VNodeMethod
 }
 
 export interface VueInstance {}

@@ -1,5 +1,8 @@
-import Vue from './core'
+import Vue from '../core'
 import Dep, { popTarget, pushTarget } from './dep'
+import { queueWatcher } from './scheduler'
+
+let watchId = 0
 
 class Watch {
   private vm: Vue
@@ -7,6 +10,8 @@ class Watch {
   private cb: () => void
   private getter: (vm: Vue) => any
   private dep?: Dep
+
+  public id: number
   public value: any
 
   constructor(vm: Vue, key: any, cb: () => void, options?: any) {
@@ -14,6 +19,7 @@ class Watch {
     this.deps = []
     this.cb = cb
     this.getter = key
+    this.id = ++watchId
 
     this.value = this.get()
   }
@@ -31,12 +37,15 @@ class Watch {
     dep.addWatch(this)
   }
   update() {
-    this.getAndInvoke(this.cb)
+    queueWatcher(this)
   }
   depend() {
     if (this.dep && Dep.Target) {
       this.dep.depend()
     }
+  }
+  run() {
+    this.getAndInvoke(this.cb)
   }
 
   private getAndInvoke(cb: () => void) {
