@@ -1,4 +1,12 @@
-import { CreateElement, VueConfig, VNode, VNodeMethod, VNodeData } from '../type/index'
+import {
+  CreateElement,
+  VueConfig,
+  VNode,
+  VNodeMethod,
+  VNodeData,
+  VNodeComputed,
+  VNodeWatch
+} from '../type/index'
 import { createElement } from './vnode'
 import Observe from './observer/observe'
 import patch from '../web/index'
@@ -8,24 +16,38 @@ import Watch from './observer/watch'
 import { noop } from '../helper/utils'
 import { isPrimitive } from 'util'
 
+interface ComputedWatch {
+  [key: string]: Watch
+}
+
 let proxyKey: any = {}
+let computedWatched: ComputedWatch = {}
 
 class Vue {
   private _vnode: VNode | null | undefined
   private _render: (h: CreateElement) => VNode
+  private _config: VueConfig
   private _data?: VNodeData
   private _method?: VNodeMethod
+  private _computed?: VNodeComputed
+  private _watch?: VNodeWatch
+  private _thisProxy: any // 指向proxy代理之后的对象
 
   public el: string
 
   constructor(config: VueConfig) {
     this.el = config.el
     this._render = config.render
-
+    this._config = config
+  }
+  _init(thisProxy: any) {
+    const config = this._config
+    this._thisProxy = thisProxy
     this._initMethods(config)
     this._initData(config)
-  }
-  _init() {
+    this._initComputed(config)
+    this._initWatch(config)
+
     let oldVnode: VNode | null = createNodeAt(this.el)
     this._vnode = oldVnode
 
@@ -36,7 +58,7 @@ class Vue {
       const updateComponent = () => {
         self._update(self.render())
       }
-      new Watch(this, updateComponent, noop)
+      new Watch(this._thisProxy, updateComponent, noop)
     }
   }
   render(): VNode {
@@ -53,12 +75,13 @@ class Vue {
   private _initData(config: VueConfig) {
     this._data = config.data && config.data()
 
+    this._data = defineKey(this._data)
     for (let key in this._data) {
       if (proxyKey[key]) {
         console.warn('data的key不合法')
       } else {
         proxyKey[key] = this._data
-        this._data[key] = defineKey(this._data[key])
+        // this._data[key] = defineKey(this._data[key])
       }
     }
   }
@@ -67,6 +90,23 @@ class Vue {
 
     for (let key in this._method) {
       proxyKey[key] = this._method
+    }
+  }
+  private _initComputed(config: VueConfig) {
+    this._computed = config.computed
+
+    for (let key in this._computed) {
+      computedWatched[key] = new Watch(this._thisProxy, this._computed[key], noop, {
+        computed: true
+      })
+      proxyKey[key] = this._computed
+    }
+  }
+  private _initWatch(config: VueConfig) {
+    this._watch = config.watch
+
+    for (let key in this._watch) {
+      new Watch(this, key, this._watch[key], { user: true })
     }
   }
 }
@@ -98,6 +138,11 @@ function defineKey(data: any) {
       return Reflect.get(target, key, receiver)
     },
     set(target, key, value, receiver) {
+      // 如果给传入的值复制对象，则继续添加依赖。添加的依赖watch怎么收集的？还是原有就有？
+      // 继续收集依赖，Dep.Target有render-watch托底，即每次可以给新的依赖添加watch
+      if (!isPrimitive(value)) {
+        value = defineKey(value)
+      }
       let flag = Reflect.set(target, key, value, receiver)
       dep.notify()
       return flag
@@ -121,27 +166,39 @@ function setProxy(vm: Vue) {
   return new Proxy(vm, {
     get(target, key, receiver) {
       if (key in proxyKey) {
+        console.log(key)
+        if (key in computedWatched) {
+          // computed属性
+          let watch = computedWatched[key as string]
+          // 计算值
+          watch.evaluate()
+          // 将computed-dep添加watch对象
+          Dep.Target && watch.depend()
+          return watch.value
+        }
         return Reflect.get(proxyKey[key], key, receiver)
-        // target._data._ob[key]
       }
       return Reflect.get(target, key, receiver)
     },
     set(target, key, value, receiver) {
       if (key in proxyKey) {
-        return Reflect.set(proxyKey[key], key, value, receiver)
+        console.log(key, proxyKey[key])
+        // fixme: receiver值得是什么鬼？
+        return Reflect.set(proxyKey[key], key, value)
       } else {
-        return Reflect.set(target, key, value, receiver)
+        return Reflect.set(target, key, value)
       }
     }
   })
 }
 
+// 代理Vue的实例，访问实例时指向新的地址！！！
 const ProxyVue = new Proxy(Vue, {
   construct(target, argumentsList, newTarget) {
     let vm = new target(...argumentsList)
     let pvm = setProxy(vm)
 
-    pvm._init()
+    pvm._init(pvm)
 
     return pvm
   }

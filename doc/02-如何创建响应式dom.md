@@ -18,6 +18,14 @@ let proxyAry = new Proxy(ary, {
     return Reflect.set(target, key, value, receiver)
   }
 })
+
+
+// 对代理对象进行操作
+proxyAry[1] = 99
+
+fixme: 重新整理observe逻辑。
+
+1、监听data、监听data的变化
 ```
 
 // vue中是如何处理传入参数的？如何保存访问data、method、等等
