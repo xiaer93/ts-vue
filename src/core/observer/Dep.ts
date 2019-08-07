@@ -9,6 +9,7 @@ class Dep {
   static Target: Watch | undefined
 
   private watches: Array<Watch>
+
   constructor() {
     this.watches = []
   }
@@ -19,7 +20,6 @@ class Dep {
     Dep.Target && Dep.Target.addDep(this)
   }
   notify() {
-    console.log([...this.watches])
     this.watches.forEach(v => {
       v.update()
     })

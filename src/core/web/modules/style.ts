@@ -1,4 +1,4 @@
-import { VNode } from '../../type'
+import { VNode } from '../../../type'
 
 type VNodeStyle = Record<string, string>
 

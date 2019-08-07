@@ -1,5 +1,5 @@
-import { VNode, VueConfig, VueInstance } from '../../type'
-import { cache, isDef, isTruth, isTrue } from '../../helper/utils'
+import { VNode, VueConfig, Vue } from '../../../type'
+import { cache, isDef, isTruth, isTrue } from '../../../helper/utils'
 import { isArray } from 'util'
 
 type EventInfo = {
@@ -54,7 +54,7 @@ function remove(target: Node, name: string, handler: EventListener, capture: boo
   target.removeEventListener(name, handler, capture)
 }
 
-function createFnInvoker(fns: Function | Array<Function>, vm: VueInstance) {
+function createFnInvoker(fns: Function | Array<Function>, vm: Vue) {
   function invoker(...args) {
     let fns = invoker.fns
     if (isArray(fns)) {
@@ -74,7 +74,7 @@ function createFnInvoker(fns: Function | Array<Function>, vm: VueInstance) {
 function updateEvent(oldVnode: VNode, vnode: VNode) {
   let oldOn = oldVnode.data!.on || {},
     on = vnode.data!.on || {},
-    vm: VueInstance = vnode.context,
+    vm: Vue = vnode.context,
     cur: any,
     old: any,
     event: EventInfo

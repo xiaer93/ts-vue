@@ -1,8 +1,7 @@
-import Vue from '../core'
 import Dep, { popTarget, pushTarget } from './dep'
 import { queueWatcher } from './scheduler'
 import { isFunction, noop } from '../../helper/utils'
-import { WatchOptions } from '../../type'
+import { WatchOptions, Vue } from '../../type'
 
 let watchId = 0
 
@@ -32,7 +31,7 @@ class Watch {
       this.value = this.get()
     }
   }
-  get(): any {
+  private get(): any {
     let vm = this.vm
     pushTarget(this)
     let value = this.getter.call(vm, vm)
@@ -41,7 +40,6 @@ class Watch {
     return value
   }
   addDep(dep: Dep) {
-    // console.log(dep)
     !this.deps.includes(dep) && this.deps.push(dep)
     dep.addWatch(this)
   }

@@ -1,9 +1,8 @@
-import { VNode, Module } from '../type'
-import { isSameVnode, isDef } from '../helper/utils'
+import { VNode, Module } from '../../type'
+import { isSameVnode, isDef } from '../../helper/utils'
 import webMethods from './dom'
 import { isArray, isPrimitive } from 'util'
-import Vue from '..'
-import { createElement } from '../core/vnode'
+import { createVnode } from '../vnode'
 
 /**
  * vnode进行diff算法，挂载更新真实dom！
@@ -20,7 +19,7 @@ const hooks: (keyof Module)[] = ['create', 'destroy', 'insert', 'remove', 'updat
 let insertedVnodeQueue: VNodeQueue = []
 let cbs = {} as ModuleHooks
 
-const emptyNode = createElement('')
+const emptyNode = createVnode('')
 
 export function createPatcher(modules?: Array<Partial<Module>>) {
   modules = isArray(modules) ? modules : []

@@ -1,3 +1,5 @@
+import { Vue } from './vue'
+
 export interface VNode {
   tag?: string
   data?: VNodeData
@@ -6,7 +8,7 @@ export interface VNode {
   elm?: Node
   parent?: VNode
   key?: string | number
-  context: VueInstance | null
+  context: Vue | null
 }
 
 export interface VNodeData {
@@ -17,9 +19,17 @@ export interface VNodeData {
 }
 
 export interface VNodeMethod {
-  [key: string]: () => void
+  [key: string]: Function
 }
 
-export interface CreateElement {
+export interface VNodeComputed {
+  [key: string]: Function
+}
+export interface VNodeWatch {
+  [key: string]: (oldVal?: any, val?: any) => void
+}
+
+export interface CreateVnode {
   (tag: string, b?: any, c?: any): VNode
+  context?: any
 }
