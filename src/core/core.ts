@@ -1,6 +1,6 @@
 import {
   Vue,
-  CreateVnode,
+  CreateVElement,
   VueOptions,
   VNode,
   ProxyKey,
@@ -8,7 +8,7 @@ import {
   VueHookMethod,
   VueStatus
 } from '../type/index'
-import { createVnode, createNodeAt } from './vnode'
+import { createVElement, createNodeAt } from './vnode'
 import { observe, createVueProxy } from './observer'
 import patch from './web/index'
 import webMethods from './web/dom'
@@ -17,6 +17,7 @@ import { noop, isTruth, isFunction, isArray } from '../helper/utils'
 import { warn } from '../helper/warn'
 import { callhook } from '../helper/hook'
 import nextTick from '../helper/next-tick'
+import { merge } from '../helper/merge'
 
 const hooks: Array<VueHookMethod> = [
   'beforeCreate',
@@ -33,13 +34,14 @@ let proxyVue: any
 
 class VueReal implements Vue {
   private _vnode: VNode | null | undefined
-  private _userRender: (h: CreateVnode) => VNode
+  private _userRender: (h: CreateVElement) => VNode
   private _proxyThis: any // 指向proxy代理之后的对象
 
   public _watcher?: Watch
   public _proxyKey: ProxyKey
   public _computedWatched: ComputedWatch
 
+  public $el?: Node
   public $status: VueStatus
   public $options: VueOptions
 
@@ -65,7 +67,7 @@ class VueReal implements Vue {
       this._watcher.teardown()
     }
     this._update(null)
-    proxyVue.revoke()
+    // proxyVue.revoke()
     this.$status.isDestroyed = true
 
     callhook(this, 'destroyed')
@@ -77,9 +79,47 @@ class VueReal implements Vue {
   public $nextTick(fn?: Function): Promise<any> | undefined {
     return nextTick(fn, this)
   }
+  public $mount() {
+    // this._initState()
+    this._mount()
+  }
+
   public _init(thisProxy: any) {
     const options = this.$options
     this._proxyThis = thisProxy
+
+    this._initState()
+
+    const elm: Node | null = webMethods.query(options.el)
+    let oldVnode: VNode | null = elm ? createNodeAt(elm) : null
+    this._vnode = oldVnode
+
+    const vm = this
+    if (!isTruth(oldVnode) && !options.isComponent) {
+      warn('必须要有可挂载的节点')
+    } else {
+      if (!options.isComponent) {
+        this._mount()
+      }
+    }
+  }
+  private _mount() {
+    const vm = this
+    const updateComponent = () => {
+      this._update(this._render())
+    }
+    this._watcher = new Watch(this._proxyThis, updateComponent, noop, {
+      before() {
+        if (vm.$status.isMounted && !vm.$status.isDestroyed) {
+          callhook(vm, 'beforeUpdate')
+        }
+      }
+    })
+
+    this.$status.isMounted = true
+    callhook(this, 'mounted')
+  }
+  private _initState() {
     this._initHook()
 
     callhook(this, 'beforeCreate')
@@ -88,38 +128,19 @@ class VueReal implements Vue {
     this._initComputed()
     this._initWatch()
     callhook(this, 'created')
-
-    const elm: Node | null = webMethods.query(options.el)
-    let oldVnode: VNode | null = elm ? createNodeAt(elm) : null
-    this._vnode = oldVnode
-
-    const vm = this
-    if (!isTruth(oldVnode)) {
-      warn('必须要有可挂载的节点')
-    } else {
-      const updateComponent = () => {
-        this._update(this._render())
-      }
-      this._watcher = new Watch(this._proxyThis, updateComponent, noop, {
-        before() {
-          if (vm.$status.isMounted && !vm.$status.isDestroyed) {
-            callhook(vm, 'beforeUpdate')
-          }
-        }
-      })
-
-      this.$status.isMounted = true
-      callhook(this, 'mounted')
-    }
   }
   private _render(): VNode {
-    createVnode.context = this
-    return this._userRender(createVnode)
+    createVElement.context = this
+    return this._userRender(createVElement)
   }
   private _update(vnode: VNode | null) {
     let oldVnode: VNode = this._vnode!
     this._vnode = vnode
-    patch(oldVnode, vnode)
+    // debugger
+
+    console.log(oldVnode, vnode)
+    this.$el = patch(oldVnode, vnode)
+    console.log('el:::::', this.$el)
   }
   private _initData() {
     // data如果为函数，则执行有可能会get？
@@ -173,6 +194,5 @@ class VueReal implements Vue {
   }
 }
 
-proxyVue = createVueProxy(VueReal)
-
-export default proxyVue.proxy
+// proxyVue = createVueProxy(VueReal)
+export default createVueProxy(VueReal)

@@ -7,5 +7,7 @@ export function invokeWithErrorHandling(fn: Function, args: Array<any>, context:
   try {
     // 绑定函数上下文
     fn.apply(context, args)
-  } catch {}
+  } catch (e) {
+    console.log(e)
+  }
 }

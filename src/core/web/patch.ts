@@ -1,8 +1,7 @@
 import { VNode, Module } from '../../type'
-import { isSameVnode, isDef } from '../../helper/utils'
+import { isSameVnode, isDef, isPrimitive, isArray, isTruth } from '../../helper/utils'
 import webMethods from './dom'
-import { isArray, isPrimitive } from 'util'
-import { createVnode } from '../vnode'
+import { createVElement, createEmptyVnode } from '../vnode'
 
 /**
  * vnode进行diff算法，挂载更新真实dom！
@@ -20,7 +19,7 @@ const hooks: (keyof Module)[] = ['create', 'destroy', 'insert', 'remove', 'updat
 let insertedVnodeQueue: VNodeQueue = []
 let cbs = {} as ModuleHooks
 
-const emptyNode = createVnode('')
+const emptyNode = createEmptyVnode()
 
 export function createPatcher(modules?: Array<Partial<Module>>) {
   modules = isArray(modules) ? modules : []
@@ -41,7 +40,11 @@ export function createPatcher(modules?: Array<Partial<Module>>) {
 /**
  * 挂载节点
  */
-function patch(oldVnode: VNode, vnode: VNode | null) {
+function patch(oldVnode: VNode | null, vnode: VNode | null) {
+  if (!isTruth(oldVnode)) {
+    return createElm(vnode)
+  }
+
   let parentElm: Node | null = webMethods.parentNode(oldVnode.elm!)
   if (!parentElm) {
     return
@@ -59,6 +62,7 @@ function patch(oldVnode: VNode, vnode: VNode | null) {
     webMethods.append(parentElm, createElm(vnode))
   }
 
+  return parentElm
   // hook-insert   节点自己的
   // for(let i = 0; i < insertedVnodeQueue.length; ++i) {
   //   insertedVnodeQueue[i]!.data!.hook.insert(insertedVnodeQueue[i])
@@ -209,6 +213,10 @@ function insertChildren(
  * 生成真实节点: div、text、comment
  */
 function createElm(vnode: VNode): Node {
+  if (createComponent(vnode)) {
+    return vnode.elm
+  }
+
   if (vnode.tag === '!') {
     vnode.elm = webMethods.createComment(vnode.text!)
   } else if (!vnode.tag) {
@@ -233,6 +241,7 @@ function createElm(vnode: VNode): Node {
     insertedVnodeQueue.push(vnode)
   }
 
+  console.log(vnode.elm.innerHtml)
   return vnode.elm
 }
 
@@ -264,4 +273,23 @@ function invokeDestroyHook(vnode: VNode) {
       }
     }
   }
+}
+
+function createComponent(vnode: VNode): boolean {
+  let i: any = vnode.data
+  if (isDef(i)) {
+    if (isDef((i = i.hook)) && isDef((i = i.init))) {
+      i(vnode)
+    }
+
+    if (isDef(vnode.componentInstance)) {
+      initComponent(vnode)
+      return true
+    }
+  }
+  return false
+}
+
+function initComponent(vnode) {
+  vnode.elm = vnode.componentInstance.$el
 }

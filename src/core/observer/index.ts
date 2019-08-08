@@ -1,6 +1,8 @@
 import Dep from './dep'
 import { isPrimitive } from '../../helper/utils'
 import { VueClass, Vue } from '../../type'
+import { merge } from '../../helper/merge'
+import { GlobalComponents } from '../component'
 
 // 将data设为响应式的，data可以为数组、对象
 // proxy对象，所有的操作都会被拦截
@@ -39,17 +41,19 @@ export function observe(data: any) {
 
 export function createVueProxy(Vue: VueClass) {
   // 创建销毁对象
-  let ret: any = {
-    proxy: null,
-    revoke: null
-  }
+  // let ret: any = {
+  //   proxy: null,
+  //   revoke: null
+  // }
 
-  ret.proxy = new Proxy(Vue, {
+  return new Proxy(Vue, {
     construct(target, argumentsList, newTarget) {
-      let vm = new target(argumentsList[0])
+      const options = merge(argumentsList[0], { components: GlobalComponents })
+
+      let vm = new target(options)
       let pvmObj = setProxy(vm)
       let pvm = pvmObj.proxy
-      ret.revoke = pvmObj.revoke
+      // ret.revoke = pvmObj.revoke
 
       // 传入proxyThis，获取代理后的对象
       pvm._init(pvm)
@@ -57,7 +61,7 @@ export function createVueProxy(Vue: VueClass) {
     }
   })
 
-  return ret
+  // return ret
 }
 
 // 代理实例对象

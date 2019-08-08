@@ -1,4 +1,4 @@
-import { Vue } from './vue'
+import { Vue, VueOptions } from './vue'
 
 export interface VNode {
   tag?: string
@@ -8,13 +8,21 @@ export interface VNode {
   elm?: Node
   parent?: VNode
   key?: string | number
-  context: Vue | null
+  context?: Vue
+  componentOptions?: VueOptions
+
+  componentInstance?: Vue
+
+  isComment?: boolean
 }
 
 export interface VNodeData {
   style?: any
   class?: any
   on?: any
+
+  hooks: Array<any>
+
   [key: string]: any
 }
 
@@ -29,7 +37,7 @@ export interface VNodeWatch {
   [key: string]: (oldVal?: any, val?: any) => void
 }
 
-export interface CreateVnode {
+export interface CreateVElement {
   (tag: string, b?: any, c?: any): VNode
   context?: any
 }

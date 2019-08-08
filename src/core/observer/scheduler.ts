@@ -17,6 +17,7 @@ function flushQueue() {
     let w: Watch = queue[i]
     w.before && w.before()
     hasAddQueue[w.id] = null
+    console.log(w.id)
     w.run()
   }
 
