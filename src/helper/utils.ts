@@ -17,7 +17,7 @@ export function isDef(val: any): val is undefined {
 }
 
 export function isPrimitive(val: any): val is string | number {
-  return ['string', 'number'].includes(typeof val)
+  return !['object', 'function'].includes(typeof val) || val === null
 }
 
 export function isTruth(val: any): boolean {

@@ -16,6 +16,7 @@ type VNodeQueue = Array<VNode>
 type ModuleHooks = ArrayOf<Module>
 
 const hooks: (keyof Module)[] = ['create', 'destroy', 'insert', 'remove', 'update']
+
 let insertedVnodeQueue: VNodeQueue = []
 let cbs = {} as ModuleHooks
 
@@ -40,9 +41,14 @@ export function createPatcher(modules?: Array<Partial<Module>>) {
 /**
  * 挂载节点
  */
-function patch(oldVnode: VNode, vnode: VNode) {
+function patch(oldVnode: VNode, vnode: VNode | null) {
   let parentElm: Node | null = webMethods.parentNode(oldVnode.elm!)
   if (!parentElm) {
+    return
+  }
+
+  if (vnode === null) {
+    webMethods.remove(parentElm, oldVnode.elm!)
     return
   }
 

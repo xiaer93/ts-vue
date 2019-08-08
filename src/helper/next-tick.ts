@@ -17,7 +17,7 @@ function flushCallbacks() {
   }
 }
 
-export default function nextTick(cb?: () => void, ctx?: object) {
+export default function nextTick(cb?: Function, ctx?: object) {
   let _resolve: (value: any) => void
   callbacks.push(() => {
     if (isFunction(cb)) {

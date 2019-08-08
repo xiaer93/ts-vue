@@ -1,5 +1,18 @@
 import { CreateVnode, VNode, VNodeMethod, VNodeComputed, VNodeWatch, VNodeData } from './vnode'
 import { Watch } from './watch'
+import { create } from 'domain'
+
+export type VueHookMethod =
+  | 'beforeCreate'
+  | 'created'
+  | 'beforeMount'
+  | 'mounted'
+  | 'beforeUpdate'
+  | 'update'
+  | 'boforeDestroy'
+  | 'destroyed'
+
+type VueHookFunction = Function | Array<Function>
 
 export interface ComputedWatch {
   [key: string]: Watch
@@ -13,16 +26,24 @@ export interface Vue {
   _proxyKey: ProxyKey
   _computedWatched: ComputedWatch
 
+  _watcher?: Watch
   _init: (thisProxy: any) => void
+
+  $options: VueOptions
+  $status: VueStatus
+
+  $destroy: () => void
+  $forceUpdate: () => void
+  $nextTick: (fn?: Function) => Promise<any> | undefined
 }
 
 export interface VueClass {
-  new (config: VueConfig): Vue
+  new (options: VueOptions): Vue
 }
 
 export interface VueClassStaic extends Vue {}
 
-export interface VueConfig {
+export interface VueOptions {
   el: string
   render: (h: CreateVnode) => VNode
 
@@ -30,4 +51,18 @@ export interface VueConfig {
   method?: VNodeMethod
   computed?: VNodeComputed
   watch?: VNodeWatch
+  beforeCreate?: VueHookFunction
+  created?: VueHookFunction
+  beforeMount?: VueHookFunction
+  mounted?: VueHookFunction
+  beforeUpdate?: VueHookFunction
+  update?: VueHookFunction
+  boforeDestroy?: VueHookFunction
+  destroyed?: VueHookFunction
+}
+
+export interface VueStatus {
+  isBeingDestroyed: boolean
+  isMounted: boolean
+  isDestroyed: boolean
 }

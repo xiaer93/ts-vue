@@ -6,23 +6,25 @@ import { WatchOptions, Vue } from '../../type'
 let watchId = 0
 
 class Watch {
-  private vm: any
   private deps: Array<Dep>
   private cb: () => void
   private getter: any
   private dep?: Dep
   private options: WatchOptions
 
+  public vm: any
   public id: number
   public value: any
+  public before?: () => void
 
-  constructor(vm: any, key: any, cb: () => void, options?: WatchOptions) {
+  constructor(vm: Vue, key: any, cb: () => void, options?: WatchOptions) {
     this.vm = vm
     this.deps = []
     this.cb = cb
     this.getter = isFunction(key) ? key : parsePath(key) || noop
     this.id = ++watchId
     this.options = options || {}
+    this.before = this.options.before
 
     if (this.options.computed) {
       this.dep = new Dep()
@@ -63,6 +65,9 @@ class Watch {
   evaluate() {
     this.value = this.get()
     return this.value
+  }
+  teardown() {
+    this.deps.length = 0
   }
 
   private getAndInvoke(cb: Function) {

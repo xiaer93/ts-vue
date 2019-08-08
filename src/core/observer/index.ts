@@ -38,22 +38,33 @@ export function observe(data: any) {
 }
 
 export function createVueProxy(Vue: VueClass) {
-  return new Proxy(Vue, {
+  // 创建销毁对象
+  let ret: any = {
+    proxy: null,
+    revoke: null
+  }
+
+  ret.proxy = new Proxy(Vue, {
     construct(target, argumentsList, newTarget) {
       let vm = new target(argumentsList[0])
-      let pvm = setProxy(vm)
+      let pvmObj = setProxy(vm)
+      let pvm = pvmObj.proxy
+      ret.revoke = pvmObj.revoke
 
       // 传入proxyThis，获取代理后的对象
       pvm._init(pvm)
       return pvm
     }
   })
+
+  return ret
 }
 
+// 代理实例对象
 function setProxy(vm: Vue) {
   const proxyKey = vm._proxyKey
   const computedWatched = vm._computedWatched
-  return new Proxy(vm, {
+  return Proxy.revocable(vm, {
     get(target, key, receiver) {
       if (key in proxyKey) {
         if (key in computedWatched) {

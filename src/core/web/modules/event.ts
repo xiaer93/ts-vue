@@ -1,19 +1,13 @@
-import { VNode, VueConfig, Vue } from '../../../type'
+import { VNode, VueOptions, Vue } from '../../../type'
 import { cache, isDef, isTruth, isTrue } from '../../../helper/utils'
 import { isArray } from 'util'
+import { invokeWithErrorHandling } from '../../../helper/warn'
 
 type EventInfo = {
   name: string
   once: boolean
   capture: boolean
   passive: boolean
-}
-
-function invokeWithErrorHandling(fn: Function, args: Array<any>, context: Object) {
-  try {
-    // 绑定函数上下文
-    fn.apply(context, args)
-  } catch {}
 }
 
 function createOnceHandler(target: Node, name: string, fn: Function, capture: boolean) {
