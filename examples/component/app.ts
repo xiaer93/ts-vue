@@ -10,7 +10,7 @@ Vue.component('button-counter', {
   },
 
   render (h) {
-    console.log('render')
+    console.log('renderrenderrenderrenderrenderrenderrenderrender')
     return h('button', {
       on: {
         click() {
@@ -22,18 +22,47 @@ Vue.component('button-counter', {
   }
 })
 
+Vue.component("anchored-heading", {
+  render: function(createElement) {
+    return createElement(
+      "h" + this.level, // 标签名称
+      this.title // 子节点数组
+    );
+  },
+  props: {
+    level: {
+      type: Number,
+      required: true
+    },
+    title: {
+      type: String,
+      default: "default-title"
+    }
+  }
+});
+
 let v = new Vue({
   el: '#app',
   data () {
     return  {
-        news: [1,2]
+        title: 'hello world!'
     }
   },
   render (h) {
     return h('div', [
-      h('button-counter')
+      h('button-counter'),
+      h('anchored-heading', {
+        props: {
+          level: 3,
+          title: this.title
+        }
+      })
     ])
   }
 })
 
 window.v = v
+
+setTimeout(() => {
+  v.title = 'change title!'
+}, 5000)

@@ -29,3 +29,6 @@ fixme: 重新整理observe逻辑。
 ```
 
 // vue中是如何处理传入参数的？如何保存访问data、method、等等
+
+
+// 每次render都需要收集一次依赖，同时更新watch和dep、更新依赖watcher。避免未使用的属性变更触发更新。提高性能。

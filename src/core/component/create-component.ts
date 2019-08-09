@@ -3,9 +3,11 @@ import { createSubVue } from '..'
 import { createVnode } from '../vnode'
 import { isDef } from '../../helper/utils'
 import { callhook } from '../../helper/hook'
+import { observe } from '../observer'
 
 const componentVNodeHooks = {
   init(vnode: VNode) {
+    debugger
     if (vnode.componentInstance && !vnode.componentInstance.$status.isDestroyed) {
       const mountedVnode = vnode
       componentVNodeHooks.prepatch(mountedVnode, mountedVnode)
@@ -14,11 +16,14 @@ const componentVNodeHooks = {
       // $mount是什么操作？？？
       child.$mount()
     }
+    console.log(vnode)
   },
   prepatch(oldVnode: VNode, vnode: VNode) {
+    debugger
     const options = vnode.componentOptions
     const child = (vnode.componentInstance = oldVnode.componentInstance)
-    updateChildComponent(child, null, null, vnode, options.children)
+    // vnode是组件节点，child是组件节点的实例
+    updateChildComponent(child, options.propsData, options.listeners, vnode, options.children)
   },
   insert(vnode: VNode) {
     const { context, componentInstance } = vnode
@@ -41,18 +46,19 @@ const hooksToMerge = Object.keys(componentVNodeHooks)
  * 创建组件
  */
 export function createComponent(
-  Ctor: VueOptions,
-  data?: VNodeData,
+  Ctor: VueOptions, // 定义组件时候的props
+  data?: VNodeData, // 调用时候传入的props
   context?: Vue,
   children?: Array<VNode>,
   tag?: string
 ): VNode {
-  const SubVue: VueClass = createSubVue(Ctor)
-
+  const baseCtor = context.$options._base
+  const SubVue: VueClass = baseCtor.extend(Ctor)
   data = data || {}
   installComponentHook(data)
 
   const name = (Ctor.options && Ctor.options.name) || tag
+  const propsData = data.props
   return createVnode(
     `vue-component-${SubVue.cid}${name ? `-${name}` : ''}`,
     data,
@@ -60,12 +66,12 @@ export function createComponent(
     undefined,
     undefined,
     context,
-    { SubVue, children }
+    { SubVue, propsData, children, tag }
   )
 }
 
 export function createComponentInstanceForVnode(vnode: VNode, parent: any): Vue {
-  const options = {
+  const options: any = {
     isComponent: true,
     parentVnode: vnode,
     parent
@@ -77,7 +83,6 @@ export function createComponentInstanceForVnode(vnode: VNode, parent: any): Vue 
   // }
 
   let ret = new vnode.componentOptions!.SubVue(options)
-  console.log(ret)
   window.r = ret
   return ret
 }
@@ -95,8 +100,17 @@ function installComponentHook(data: VNodeData) {
   }
 }
 
-function updateChildComponent() {
-  console.log('暂时不需要跟新子组件')
+function updateChildComponent(
+  vm: Vue,
+  propsData: any,
+  listeners: any,
+  parentVnode: Vue,
+  renderChildren?: Array<VNode>
+) {
+  vm.$options.propsData = propsData
+  vm._initProps()
+
+  vm.$forceUpdate()
 }
 
 function mergeHook(f1: any, f2: any): Function {

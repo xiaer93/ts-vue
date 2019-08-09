@@ -39,33 +39,8 @@ export function observe(data: any) {
   return proxyData
 }
 
-export function createVueProxy(Vue: VueClass) {
-  // 创建销毁对象
-  // let ret: any = {
-  //   proxy: null,
-  //   revoke: null
-  // }
-
-  return new Proxy(Vue, {
-    construct(target, argumentsList, newTarget) {
-      const options = merge(argumentsList[0], { components: GlobalComponents })
-
-      let vm = new target(options)
-      let pvmObj = setProxy(vm)
-      let pvm = pvmObj.proxy
-      // ret.revoke = pvmObj.revoke
-
-      // 传入proxyThis，获取代理后的对象
-      pvm._init(pvm)
-      return pvm
-    }
-  })
-
-  // return ret
-}
-
 // 代理实例对象
-function setProxy(vm: Vue) {
+export function setProxy(vm: Vue) {
   const proxyKey = vm._proxyKey
   const computedWatched = vm._computedWatched
   return Proxy.revocable(vm, {

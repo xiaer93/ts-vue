@@ -13,11 +13,10 @@ import { observe, createVueProxy } from './observer'
 import patch from './web/index'
 import webMethods from './web/dom'
 import Watch from './observer/watch'
-import { noop, isTruth, isFunction, isArray } from '../helper/utils'
+import { noop, isTruth, isFunction, isArray, isNode, isDef } from '../helper/utils'
 import { warn } from '../helper/warn'
 import { callhook } from '../helper/hook'
 import nextTick from '../helper/next-tick'
-import { merge } from '../helper/merge'
 
 const hooks: Array<VueHookMethod> = [
   'beforeCreate',
@@ -41,11 +40,12 @@ class VueReal implements Vue {
   public _proxyKey: ProxyKey
   public _computedWatched: ComputedWatch
 
-  public $el?: Node
+  public $el: Node | null | undefined
   public $status: VueStatus
   public $options: VueOptions
 
   constructor(options: VueOptions) {
+    console.log('oooooooo:', options)
     this._userRender = options.render
     this.$options = options
     this.$status = {
@@ -79,8 +79,8 @@ class VueReal implements Vue {
   public $nextTick(fn?: Function): Promise<any> | undefined {
     return nextTick(fn, this)
   }
-  public $mount() {
-    // this._initState()
+  public $mount(el: Node | string) {
+    this.$el = isNode(el) ? el : webMethods.query(el)
     this._mount()
   }
 
@@ -88,22 +88,33 @@ class VueReal implements Vue {
     const options = this.$options
     this._proxyThis = thisProxy
 
+    if (options.isComponent) {
+      this._initComponent()
+    }
+
     this._initState()
 
-    const elm: Node | null = webMethods.query(options.el)
-    let oldVnode: VNode | null = elm ? createNodeAt(elm) : null
-    this._vnode = oldVnode
-
-    const vm = this
-    if (!isTruth(oldVnode) && !options.isComponent) {
-      warn('必须要有可挂载的节点')
-    } else {
-      if (!options.isComponent) {
-        this._mount()
-      }
+    if (!options.isComponent) {
+      this.$mount(options.el)
     }
   }
+  private _initComponent() {
+    const opts = this.$options
+    const parentVnode = this.$options.parentVnode
+    opts.propsData = parentVnode.componentOptions.propsData
+  }
   private _mount() {
+    const elm = this.$el
+    const options = this.$options
+    if (!isDef(this._vnode) && elm) {
+      let oldVnode: VNode | null = elm ? createNodeAt(elm) : null
+      this._vnode = oldVnode
+    }
+
+    if (!isTruth(this._vnode) && !options.isComponent) {
+      warn('必须要有可挂载的节点')
+    }
+
     const vm = this
     const updateComponent = () => {
       this._update(this._render())
@@ -123,6 +134,7 @@ class VueReal implements Vue {
     this._initHook()
 
     callhook(this, 'beforeCreate')
+    this._initProps()
     this._initMethods()
     this._initData()
     this._initComputed()
@@ -136,11 +148,8 @@ class VueReal implements Vue {
   private _update(vnode: VNode | null) {
     let oldVnode: VNode = this._vnode!
     this._vnode = vnode
-    // debugger
 
-    console.log(oldVnode, vnode)
     this.$el = patch(oldVnode, vnode)
-    console.log('el:::::', this.$el)
   }
   private _initData() {
     // data如果为函数，则执行有可能会get？
@@ -156,6 +165,19 @@ class VueReal implements Vue {
     this.$options.data = proxyData = observe(data)
     for (let key in data) {
       this._proxyKey[key] = proxyData
+    }
+  }
+  public _initProps() {
+    let proxyProp: any
+    const propsData = this.$options.propsData
+
+    if (!isTruth(propsData)) {
+      return
+    }
+
+    this.$options.propsData = proxyProp = observe(propsData)
+    for (let key in propsData) {
+      this._proxyKey[key] = proxyProp
     }
   }
   private _initMethods() {
@@ -194,5 +216,4 @@ class VueReal implements Vue {
   }
 }
 
-// proxyVue = createVueProxy(VueReal)
-export default createVueProxy(VueReal)
+export default VueReal

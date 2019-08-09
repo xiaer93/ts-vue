@@ -41,6 +41,8 @@ export function createPatcher(modules?: Array<Partial<Module>>) {
  * 挂载节点
  */
 function patch(oldVnode: VNode | null, vnode: VNode | null) {
+  debugger
+
   if (!isTruth(oldVnode)) {
     return createElm(vnode)
   }
@@ -73,9 +75,18 @@ function patch(oldVnode: VNode | null, vnode: VNode | null) {
  * 比较相同节点(标签相同)
  */
 function patchNode(oldVnode: VNode, vnode: VNode) {
+  debugger
   let oldCh = oldVnode.children,
     ch = vnode.children,
-    elm = (vnode.elm = oldVnode.elm!)
+    elm = (vnode.elm = oldVnode.elm!),
+    data = vnode.data
+
+  let i: any
+  debugger
+  vnode.componentInstance = oldVnode.componentInstance
+  if (isDef(data) && isDef((i = data.hook)) && isDef((i = i.prepatch))) {
+    i(oldVnode, vnode)
+  }
 
   if (oldVnode === vnode) return
 
@@ -105,6 +116,7 @@ function patchNode(oldVnode: VNode, vnode: VNode) {
  * 比较相同节点的子节点
  */
 function updateChildren(parentElm: Node, oldCh: Array<VNode>, ch: Array<VNode>) {
+  debugger
   let oldStart = 0,
     oldEnd = oldCh.length - 1,
     oldStartVnode: VNode = oldCh[oldStart],
@@ -241,7 +253,6 @@ function createElm(vnode: VNode): Node {
     insertedVnodeQueue.push(vnode)
   }
 
-  console.log(vnode.elm.innerHtml)
   return vnode.elm
 }
 

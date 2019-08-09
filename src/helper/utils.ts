@@ -28,6 +28,14 @@ export function isTrue(val: any): val is true {
   return val === true
 }
 
+export function isObject(val: any): val is object {
+  return val !== null && typeof val === 'object'
+}
+
+export function isNode(val: any): val is Node {
+  return val && val.nodeType === 1
+}
+
 export function noop() {}
 
 function getType(val: any): string {

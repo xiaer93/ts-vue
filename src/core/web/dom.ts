@@ -1,5 +1,5 @@
 const webMethods = {
-  query(selectorText: string): Element | null {
+  query(selectorText: string): Node | null {
     return document.querySelector(selectorText)
   },
   append(parentNode: Node, node: Node) {

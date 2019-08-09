@@ -9,17 +9,25 @@ export interface VNode {
   parent?: VNode
   key?: string | number
   context?: Vue
-  componentOptions?: VueOptions
-
+  componentOptions?: ComponentVueOptions
   componentInstance?: Vue
 
   isComment?: boolean
 }
 
+export interface ComponentVueOptions extends VueOptions {
+  propsData?: any
+}
+
 export interface VNodeData {
   style?: any
   class?: any
-  on?: any
+  attrs?: any
+  props?: any
+  domProps?: any
+
+  on?: onType
+  nativeOn?: onType
 
   hooks: Array<any>
 
@@ -40,4 +48,8 @@ export interface VNodeWatch {
 export interface CreateVElement {
   (tag: string, b?: any, c?: any): VNode
   context?: any
+}
+
+type onType = {
+  [key: string]: Function
 }

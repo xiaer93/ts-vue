@@ -2,7 +2,7 @@ import { VNodeData, CreateVElement, VNode } from '../type/vnode'
 import { isArray } from 'util'
 import { Vue, VueOptions } from '../type'
 import { isReserveTag } from './web/element'
-import { isTruth, isDef, isPrimitive } from '../helper/utils'
+import { isTruth, isDef, isPrimitive, isObject } from '../helper/utils'
 import { createComponent } from './component/create-component'
 
 class VNodeRel implements VNode {
@@ -58,6 +58,8 @@ export const createVElement: CreateVElement = function(tag: string, b?: any, c?:
 
   if (isArray(b)) {
     children = b
+  } else if (isObject(b)) {
+    data = b
   } else {
     text = b
   }
@@ -75,7 +77,7 @@ export const createVElement: CreateVElement = function(tag: string, b?: any, c?:
   if (isReserveTag(tag)) {
     return new VNodeRel(tag, data, children, text, undefined, context)
   } else if (context && isDef((Ctor = resolveAsset(context.$options, 'components', tag)))) {
-    console.log(Ctor)
+    console.log('Ctor', Ctor, data)
     return createComponent(Ctor, data, context, children, tag)
   } else {
     return new VNodeRel('!', undefined, undefined, tag)

@@ -40,7 +40,6 @@ export function queueWatcher(watch: Watch) {
     if (!flush) {
       queue.push(watch)
     } else {
-      // console.log(watch)
       // for(let i = 0; i < queue.length; ++i) {
 
       // }

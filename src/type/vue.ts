@@ -52,7 +52,8 @@ export interface VueOptions {
   components?: Array<Vue>
 
   data?: () => any
-  method?: VNodeMethod
+  props?: any
+  methods?: VNodeMethod
   computed?: VNodeComputed
   watch?: VNodeWatch
   beforeCreate?: VueHookFunction
