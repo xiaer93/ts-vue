@@ -40,6 +40,7 @@ export function observe(data: any) {
 }
 
 // 代理实例对象
+// data-computed-props-attrs-domProps等，有的可以set和get，有的只允许get
 export function setProxy(vm: Vue) {
   const proxyKey = vm._proxyKey
   const computedWatched = vm._computedWatched

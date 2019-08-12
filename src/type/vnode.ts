@@ -19,7 +19,10 @@ export interface ComponentVueOptions extends VueOptions {
   propsData?: any
 }
 
-export interface VNodeData {
+/**
+ * render函数的入参
+ */
+export interface VNodeDataRender {
   style?: any
   class?: any
   attrs?: any
@@ -34,6 +37,10 @@ export interface VNodeData {
   [key: string]: any
 }
 
+export interface VNodeData extends VNodeDataRender {
+  staticClass?: any
+}
+
 export interface VNodeMethod {
   [key: string]: Function
 }
@@ -45,11 +52,13 @@ export interface VNodeWatch {
   [key: string]: (oldVal?: any, val?: any) => void
 }
 
-export interface CreateVElement {
-  (tag: string, b?: any, c?: any): VNode
-  context?: any
-}
-
 type onType = {
   [key: string]: Function
+}
+
+// 拓展Node节点
+// fixme: 所有的Node类型是否需要替换为Element，但是注释Comment节点；
+// 节点和子节点
+export interface VElement extends Element {
+  _prevClass?: string
 }

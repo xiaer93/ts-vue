@@ -1,7 +1,7 @@
 import { VNode, Module } from '../../type'
-import { isSameVnode, isDef, isPrimitive, isArray, isTruth } from '../../helper/utils'
+import { isSameVnode, isDef, isUndef, isPrimitive, isArray, isTruth } from '../../helper/utils'
 import webMethods from './dom'
-import { createVElement, createEmptyVnode } from '../vnode'
+import { createEmptyVnode } from '../vnode'
 
 /**
  * vnode进行diff算法，挂载更新真实dom！
@@ -18,8 +18,6 @@ const hooks: (keyof Module)[] = ['create', 'destroy', 'insert', 'remove', 'updat
 
 let insertedVnodeQueue: VNodeQueue = []
 let cbs = {} as ModuleHooks
-
-const emptyNode = createEmptyVnode()
 
 export function createPatcher(modules?: Array<Partial<Module>>) {
   modules = isArray(modules) ? modules : []
@@ -41,8 +39,7 @@ export function createPatcher(modules?: Array<Partial<Module>>) {
  * 挂载节点
  */
 function patch(oldVnode: VNode | null, vnode: VNode | null) {
-  debugger
-
+  if (vnode.tag === 'button') debugger
   if (!isTruth(oldVnode)) {
     return createElm(vnode)
   }
@@ -75,14 +72,12 @@ function patch(oldVnode: VNode | null, vnode: VNode | null) {
  * 比较相同节点(标签相同)
  */
 function patchNode(oldVnode: VNode, vnode: VNode) {
-  debugger
   let oldCh = oldVnode.children,
     ch = vnode.children,
     elm = (vnode.elm = oldVnode.elm!),
     data = vnode.data
 
   let i: any
-  debugger
   vnode.componentInstance = oldVnode.componentInstance
   if (isDef(data) && isDef((i = data.hook)) && isDef((i = i.prepatch))) {
     i(oldVnode, vnode)
@@ -116,7 +111,6 @@ function patchNode(oldVnode: VNode, vnode: VNode) {
  * 比较相同节点的子节点
  */
 function updateChildren(parentElm: Node, oldCh: Array<VNode>, ch: Array<VNode>) {
-  debugger
   let oldStart = 0,
     oldEnd = oldCh.length - 1,
     oldStartVnode: VNode = oldCh[oldStart],
@@ -168,7 +162,7 @@ function updateChildren(parentElm: Node, oldCh: Array<VNode>, ch: Array<VNode>) 
 
   if (oldStart <= oldEnd || newStart <= newEnd) {
     if (oldStart > oldEnd) {
-      let before = !isDef(ch[newEnd + 1]) ? null : ch[newEnd + 1].elm!
+      let before = isUndef(ch[newEnd + 1]) ? null : ch[newEnd + 1].elm!
       insertChildren(parentElm, before, ch, newStart, newEnd)
     } else {
       removeChildren(parentElm, oldCh, oldStart, oldEnd)
@@ -236,6 +230,7 @@ function createElm(vnode: VNode): Node {
   } else {
     vnode.elm = webMethods.createElement(vnode.tag!)
 
+    const emptyNode = createEmptyVnode()
     //hook-create
     invokeHooks('create')(emptyNode, vnode)
 

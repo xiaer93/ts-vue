@@ -24,7 +24,9 @@ const webMethods = {
     return document.createTextNode(text)
   },
   setTextContent(node: Node, text: string) {
-    return (node.textContent = text)
+    // fixme：文本节点的修改方式？？？
+    // return (node.textContent = text)
+    return (node.data = text)
   },
   nextSibling(node: Node): Node | null {
     return node.nextSibling

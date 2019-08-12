@@ -1,4 +1,4 @@
-import { CreateVElement, VNode, VNodeMethod, VNodeComputed, VNodeWatch, VNodeData } from './vnode'
+import { VNode, VNodeMethod, VNodeComputed, VNodeWatch, VNodeData } from './vnode'
 import { Watch } from './watch'
 import { create } from 'domain'
 
@@ -23,6 +23,8 @@ export interface ProxyKey {
 }
 
 export interface Vue {
+  _events: any
+
   _proxyKey: ProxyKey
   _computedWatched: ComputedWatch
 
@@ -32,10 +34,15 @@ export interface Vue {
   $options: VueOptions
   $status: VueStatus
 
+  $createElement: (a: any, b: any, c: any) => VNode
   $destroy: () => void
   $forceUpdate: () => void
   $nextTick: (fn?: Function) => Promise<any> | undefined
   $mount: (elm: Node) => void
+  $on: (event: string | Array<string>, fn: Function) => Vue
+  $off: (event?: string | Array<string>, fn?: Function) => Vue
+  $once: (event?: string | Array<string>, fn?: Function) => Vue
+  $emit: (event: string, ...args: any[]) => Vue
 }
 
 export interface VueClass {
@@ -47,7 +54,7 @@ export interface VueClassStaic extends Vue {}
 
 export interface VueOptions {
   el: string
-  render: (h: CreateVElement) => VNode
+  render: (h: any) => VNode
 
   components?: Array<Vue>
 

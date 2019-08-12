@@ -4,7 +4,6 @@ type VNodeStyle = Record<string, string>
 
 // 更新样式
 function updateStyle(oldVnode: VNode, vnode: VNode): void {
-  // debugger
   let cur: any,
     name: string,
     elm = vnode.elm,

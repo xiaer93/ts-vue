@@ -4,10 +4,10 @@ import { createVnode } from '../vnode'
 import { isDef } from '../../helper/utils'
 import { callhook } from '../../helper/hook'
 import { observe } from '../observer'
+import { updateComponentListeners } from './events'
 
 const componentVNodeHooks = {
   init(vnode: VNode) {
-    debugger
     if (vnode.componentInstance && !vnode.componentInstance.$status.isDestroyed) {
       const mountedVnode = vnode
       componentVNodeHooks.prepatch(mountedVnode, mountedVnode)
@@ -19,7 +19,6 @@ const componentVNodeHooks = {
     console.log(vnode)
   },
   prepatch(oldVnode: VNode, vnode: VNode) {
-    debugger
     const options = vnode.componentOptions
     const child = (vnode.componentInstance = oldVnode.componentInstance)
     // vnode是组件节点，child是组件节点的实例
@@ -53,20 +52,24 @@ export function createComponent(
   tag?: string
 ): VNode {
   const baseCtor = context.$options._base
-  const SubVue: VueClass = baseCtor.extend(Ctor)
+  const Ctor: VueClass = baseCtor.extend(Ctor)
   data = data || {}
+
+  const listeners = data.on
+  data.on = data.nativeOn
+
   installComponentHook(data)
 
   const name = (Ctor.options && Ctor.options.name) || tag
   const propsData = data.props
   return createVnode(
-    `vue-component-${SubVue.cid}${name ? `-${name}` : ''}`,
+    `vue-component-${Ctor.cid}${name ? `-${name}` : ''}`,
     data,
     undefined,
     undefined,
     undefined,
     context,
-    { SubVue, propsData, children, tag }
+    { Ctor, propsData, children, tag, listeners }
   )
 }
 
@@ -82,7 +85,7 @@ export function createComponentInstanceForVnode(vnode: VNode, parent: any): Vue 
   //   options.render = inlineTemplate.render
   // }
 
-  let ret = new vnode.componentOptions!.SubVue(options)
+  let ret = new vnode.componentOptions!.Ctor(options)
   window.r = ret
   return ret
 }
@@ -107,7 +110,11 @@ function updateChildComponent(
   parentVnode: Vue,
   renderChildren?: Array<VNode>
 ) {
+  const oldListeners = vm.$options._parentListeners
   vm.$options.propsData = propsData
+  vm.$options._parentListeners = listeners
+  updateComponentListeners(vm, listeners, oldListeners)
+
   vm._initProps()
 
   vm.$forceUpdate()

@@ -1,5 +1,5 @@
 import { isFunction } from 'util'
-import { isDef } from './utils'
+import { isDef, isUndef } from './utils'
 
 let callbacks: Array<() => void> = []
 // 等待cb？
@@ -34,7 +34,7 @@ export default function nextTick(cb?: Function, ctx?: object) {
     timeFun(flushCallbacks)
   }
 
-  if (!cb && !isDef(Promise)) {
+  if (!cb && isUndef(Promise)) {
     return new Promise(resolve => {
       _resolve = resolve
     })

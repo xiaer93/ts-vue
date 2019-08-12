@@ -1,6 +1,5 @@
 import {
   Vue,
-  CreateVElement,
   VueOptions,
   VNode,
   ProxyKey,
@@ -8,15 +7,16 @@ import {
   VueHookMethod,
   VueStatus
 } from '../type/index'
-import { createVElement, createNodeAt } from './vnode'
-import { observe, createVueProxy } from './observer'
+import { createNodeAt, makeCreateElement } from './vnode'
+import { observe } from './observer'
 import patch from './web/index'
 import webMethods from './web/dom'
 import Watch from './observer/watch'
-import { noop, isTruth, isFunction, isArray, isNode, isDef } from '../helper/utils'
-import { warn } from '../helper/warn'
+import { noop, isTruth, isFunction, isArray, isNode, isUndef, curry } from '../helper/utils'
+import { warn, invokeWithErrorHandling } from '../helper/warn'
 import { callhook } from '../helper/hook'
 import nextTick from '../helper/next-tick'
+import { updateComponentListeners } from './component/events'
 
 const hooks: Array<VueHookMethod> = [
   'beforeCreate',
@@ -32,10 +32,11 @@ const hooks: Array<VueHookMethod> = [
 let proxyVue: any
 
 class VueReal implements Vue {
-  private _vnode: VNode | null | undefined
-  private _userRender: (h: CreateVElement) => VNode
+  private _userRender: (h: any) => VNode
   private _proxyThis: any // 指向proxy代理之后的对象
+  private _events: any
 
+  public _vnode: VNode | null | undefined
   public _watcher?: Watch
   public _proxyKey: ProxyKey
   public _computedWatched: ComputedWatch
@@ -43,6 +44,7 @@ class VueReal implements Vue {
   public $el: Node | null | undefined
   public $status: VueStatus
   public $options: VueOptions
+  public $createElement: any
 
   constructor(options: VueOptions) {
     console.log('oooooooo:', options)
@@ -83,10 +85,72 @@ class VueReal implements Vue {
     this.$el = isNode(el) ? el : webMethods.query(el)
     this._mount()
   }
+  public $on(event: string | Array<string>, fn: Function): Vue {
+    const vm: Vue = this
 
+    if (isArray(event)) {
+      for (let i = 0, len = event.length; i < len; ++i) {
+        vm.$on(event[i], fn)
+      }
+    } else {
+      ;(vm._events[event] || (vm._events[event] = [])).push(fn)
+      // fixme: hookEvent是？
+    }
+
+    return vm
+  }
+  public $off(event?: string | Array<string>, fn?: Function): Vue {
+    const vm: Vue = this
+
+    if (isUndef(event)) {
+      vm._events = Object.create(null)
+      return vm
+    }
+
+    if (Array.isArray(event)) {
+      for (let i = 0, len = event.length; i < len; ++i) {
+        vm.$off(event[i], fn)
+      }
+      return vm
+    }
+
+    const eventFns = vm._events[event]
+    if (!isArray(eventFns)) {
+      return vm
+    }
+    if (isUndef(fn)) {
+      vm._events[event] = null
+      return vm
+    }
+
+    for (let i = 0, len = eventFns.length; i < len; ++i) {
+      if (eventFns[i] === fn) {
+        eventFns.splice(i, 1)
+        break
+      }
+    }
+
+    return vm
+  }
+  public $emit(event: string, ...args: any[]): Vue {
+    const vm: Vue = this
+
+    const eventFns: Array<Function> = vm._events[event]
+    if (eventFns) {
+      const info = `event handler for "${event}"`
+      for (let i = 0, len = eventFns.length; i < len; ++i) {
+        invokeWithErrorHandling(eventFns[i], args, vm)
+      }
+    }
+
+    return vm
+  }
+
+  // 指定代理后的Vue实例，通过代理后的实例才能访问到data、computed、methods等等
   public _init(thisProxy: any) {
     const options = this.$options
     this._proxyThis = thisProxy
+    this.$createElement = makeCreateElement(thisProxy)
 
     if (options.isComponent) {
       this._initComponent()
@@ -101,12 +165,16 @@ class VueReal implements Vue {
   private _initComponent() {
     const opts = this.$options
     const parentVnode = this.$options.parentVnode
-    opts.propsData = parentVnode.componentOptions.propsData
+
+    // 将vnode的信息整合至$options
+    const vnodeComponentOptions = parentVnode.componentOptions
+    opts.propsData = vnodeComponentOptions.propsData
+    opts._parentListeners = vnodeComponentOptions.listeners
   }
   private _mount() {
     const elm = this.$el
     const options = this.$options
-    if (!isDef(this._vnode) && elm) {
+    if (isUndef(this._vnode) && elm) {
       let oldVnode: VNode | null = elm ? createNodeAt(elm) : null
       this._vnode = oldVnode
     }
@@ -122,28 +190,28 @@ class VueReal implements Vue {
     this._watcher = new Watch(this._proxyThis, updateComponent, noop, {
       before() {
         if (vm.$status.isMounted && !vm.$status.isDestroyed) {
-          callhook(vm, 'beforeUpdate')
+          callhook(vm._proxyThis, 'beforeUpdate')
         }
       }
     })
 
     this.$status.isMounted = true
-    callhook(this, 'mounted')
+    callhook(this._proxyThis, 'mounted')
   }
   private _initState() {
     this._initHook()
 
-    callhook(this, 'beforeCreate')
+    callhook(this._proxyThis, 'beforeCreate')
+    this._initEvent()
     this._initProps()
     this._initMethods()
     this._initData()
     this._initComputed()
     this._initWatch()
-    callhook(this, 'created')
+    callhook(this._proxyThis, 'created')
   }
   private _render(): VNode {
-    createVElement.context = this
-    return this._userRender(createVElement)
+    return this._userRender(this.$createElement)
   }
   private _update(vnode: VNode | null) {
     let oldVnode: VNode = this._vnode!
@@ -181,10 +249,10 @@ class VueReal implements Vue {
     }
   }
   private _initMethods() {
-    const method = this.$options.method
+    const methods = this.$options.methods
 
-    for (let key in method) {
-      this._proxyKey[key] = method
+    for (let key in methods) {
+      this._proxyKey[key] = methods
     }
   }
   private _initComputed() {
@@ -212,6 +280,14 @@ class VueReal implements Vue {
     for (let h of hooks) {
       const vueHooks = this.$options[h]
       this.$options[h] = isArray(vueHooks) ? vueHooks : isFunction(vueHooks) ? [vueHooks] : []
+    }
+  }
+  private _initEvent() {
+    this._events = Object.create(null)
+    // _parentListeners父组件挂载的事件
+    const listeners = this.$options._parentListeners
+    if (listeners) {
+      updateComponentListeners(this, listeners)
     }
   }
 }

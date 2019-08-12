@@ -2,6 +2,24 @@ import Vue from "../../src";
 
 let runCount = 0
 
+Vue.component('button-count', {
+    data () {
+        return {
+            count: 0
+        }
+    },
+    render (h) {
+        const self = this
+        return h('button', {
+            on: {
+                click () {
+                    self.$emit('customClick', ++self.count)
+                }
+            }
+        }, `点击次数：${this.count}`)
+    }
+})
+
 let v = new Vue({
   el: '#app',
   data () {
@@ -9,24 +27,31 @@ let v = new Vue({
         news: []
     }
   },
-  method: {
+  methods: {
       getList () {
           this.news.push(Math.random().toString().substr(3, 10))
-          console.log(this.news)
       }
   },
   render (h) {
-      console.log('render:', ++runCount)
+    const self = this
+    console.log('render:', ++runCount)
     return h('div', [
-        h('button', {
+        // h('button', {
+        //     on: {
+        //         click () {
+        //             this.getList()
+        //         }
+        //     }
+        // }, '添加list'),
+        h('button-count', {
             on: {
-                click () {
-                    console.log(123)
-                    this.getList()
+                customClick (count) {
+                    console.log(count, self)
+                    self.getList()
                 }
             }
-        }, '添加list'),
-        h('ul', this.news.map(v => {
+        }),
+        h('ul', self.news.map(v => {
             return h('li', v)
         }))
     ])
@@ -34,6 +59,9 @@ let v = new Vue({
 })
 
 window.v = v
+
+
+// watcher执行的顺序了。导致ul-list没有更新
 
 // setTimeout(() => {
 //     debugger

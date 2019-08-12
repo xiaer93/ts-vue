@@ -3,6 +3,7 @@ import nextTick from '../../helper/next-tick'
 import { isDef, isTruth } from '../../helper/utils'
 import { Vue } from '../../type'
 import { callhook } from '../../helper/hook'
+import { debug } from 'util'
 
 let flush: boolean = false
 let wait: boolean = false
@@ -13,17 +14,27 @@ let queue: Array<Watch> = []
 function flushQueue() {
   flush = true
 
-  for (let i = 0; i < queue.length; ++i) {
-    let w: Watch = queue[i]
-    w.before && w.before()
-    hasAddQueue[w.id] = null
-    console.log(w.id)
-    w.run()
+  queue.sort(function(a, b) {
+    return a.id - b.id
+  })
+
+  try {
+    for (let i = 0; i < queue.length; ++i) {
+      let w: Watch = queue[i]
+      w.before && w.before()
+      hasAddQueue[w.id] = null
+      console.log('watcher: ', w.id)
+      w.run()
+    }
+  } catch (e) {
+    console.log(e)
   }
 
-  const updateQueue = queue.slice()
-  resetQueue()
+  console.log(222222222222222)
 
+  const updateQueue = queue.slice()
+
+  resetQueue()
   callUpdateHooks(updateQueue)
 }
 

@@ -29,6 +29,7 @@ export function createSubVue(options: VueOptions) {
   }
   const proxySubVue = extend(SubVue)
   cacheCtor[Super.cid] = proxySubVue
+  proxySubVue.options = options
 
   return proxySubVue
 }

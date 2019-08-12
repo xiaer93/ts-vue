@@ -16,6 +16,10 @@ export function isDef(val: any): val is undefined {
   return getType(val) !== '[object Undefined]'
 }
 
+export function isUndef(val: any): boolean {
+  return !isDef(val)
+}
+
 export function isPrimitive(val: any): val is string | number {
   return !['object', 'function'].includes(typeof val) || val === null
 }
@@ -32,8 +36,19 @@ export function isObject(val: any): val is object {
   return val !== null && typeof val === 'object'
 }
 
+export function isPlainObject(val: any): val is object {
+  return getType(val) === '[object Object]'
+}
+
 export function isNode(val: any): val is Node {
   return val && val.nodeType === 1
+}
+export function isString(val: any): val is string {
+  return typeof val === 'string'
+}
+
+export function curry(fn: Function, argLen: number = fn.length, ...args: any[]): any {
+  return args.length < argLen ? curry.bind(null, fn, argLen, ...args) : fn(...args)
 }
 
 export function noop() {}

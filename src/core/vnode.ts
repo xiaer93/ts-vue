@@ -1,10 +1,22 @@
-import { VNodeData, CreateVElement, VNode } from '../type/vnode'
+import { VNodeData, VNode, VNodeDataRender } from '../type/vnode'
 import { isArray } from 'util'
 import { Vue, VueOptions } from '../type'
 import { isReserveTag } from './web/element'
-import { isTruth, isDef, isPrimitive, isObject } from '../helper/utils'
+import {
+  isTruth,
+  isDef,
+  isPrimitive,
+  isObject,
+  isUndef,
+  curry,
+  isPlainObject
+} from '../helper/utils'
 import { createComponent } from './component/create-component'
+import VueReal from './core'
 
+/**
+ * 虚拟节点，总共有4种类型：子节点、组件节点、文本节点、注释节点
+ */
 class VNodeRel implements VNode {
   tag?: string
   data?: VNodeData
@@ -29,73 +41,87 @@ class VNodeRel implements VNode {
     componentOptions?: VueOptions
   ) {
     this.tag = tag
-    this.data = data
+    this.data = data || ({} as VNodeData)
     this.children = children
     this.text = text
     this.elm = elm
-    this.context = context
+    this.context = context || bindContenxt
     this.componentOptions = componentOptions
   }
 }
 
-/**
- * 创建虚拟节点：子节点、文本节点、注释节点、组件节点
- */
-export const createVElement: CreateVElement = function(tag: string, b?: any, c?: any): VNode {
-  let data: VNodeData | undefined,
-    children: Array<VNode> | undefined,
-    text: string = '',
-    isComment: boolean = false
-  const context: Vue = createVElement.context
-  let Ctor
+let bindContenxt: Vue | undefined = undefined
 
-  if (!isTruth(tag)) return createEmptyVnode()
+/**
+ * 创建虚拟节点：子节点、组件节点
+ */
+function createVElement(context: Object, a: string): VNode
+function createVElement(context: Object, a: string, b: VNodeDataRender): VNode
+function createVElement(context: Object, a: string, c: string | Array<VNode | string>): VNode
+function createVElement(
+  context: Object,
+  a: string,
+  b: VNodeDataRender,
+  c: string | Array<VNode | string>
+): VNode
+function createVElement(context: Object, a: string, b?: any, c?: any): VNode {
+  let data: VNodeData | undefined, children: Array<VNode> | undefined, Ctor: any
+
+  if (isUndef(a)) return createEmptyVnode()
 
   if (isDef(c)) {
     data = b
     b = c
   }
 
-  if (isArray(b)) {
-    children = b
-  } else if (isObject(b)) {
+  if (isPlainObject(b)) {
     data = b
   } else {
-    text = b
+    children = isArray(b) ? b : [isPrimitive(b) ? createTextVnode(b) : b]
   }
-
-  data = data || ({} as VNodeData)
 
   if (isArray(children)) {
     for (let i = 0; i < children.length; ++i) {
       if (isPrimitive(children[i])) {
-        children[i] = new VNodeRel('!', undefined, undefined, tag)
+        children[i] = new VNodeRel('!', undefined, undefined, a)
       }
     }
   }
 
-  if (isReserveTag(tag)) {
-    return new VNodeRel(tag, data, children, text, undefined, context)
-  } else if (context && isDef((Ctor = resolveAsset(context.$options, 'components', tag)))) {
+  if (context && isReserveTag(a)) {
+    return new VNodeRel(a, data, children, undefined, undefined, context)
+  } else if (context && isDef((Ctor = resolveAsset(context.$options, 'components', a)))) {
     console.log('Ctor', Ctor, data)
-    return createComponent(Ctor, data, context, children, tag)
+    return createComponent(Ctor, data, context, children, a)
   } else {
-    return new VNodeRel('!', undefined, undefined, tag)
+    return new VNodeRel('!', undefined, undefined, a)
   }
 }
 
+export function makeCreateElement(context: Object): Function {
+  bindContenxt = context
+  return curry(createVElement, 2)(context)
+}
+
 export function createNodeAt(elm: Node): VNode {
-  const vnode: VNode = createVElement(elm!.nodeName)
+  const vnode: VNode = new VNodeRel(elm!.nodeName, undefined, undefined, undefined, undefined)
   vnode.elm = elm
   return vnode
 }
 
-export function createEmptyVnode() {
-  return new VNodeRel('', {} as VNodeData)
+// 用于生成组件的vnode
+export function createVnode(...args: any[]): VNode {
+  return new VNodeRel(...args)
 }
 
-export function createVnode(...args) {
-  return new VNodeRel(...args)
+// 注释节点、
+export function createEmptyVnode(text: string = ''): VNode {
+  return new VNodeRel('!', undefined, undefined, text)
+}
+
+// 文本节点、
+function createTextVnode(text: string): VNode {
+  return new VNodeRel(undefined, undefined, undefined, text)
 }
 
 function resolveAsset(options: VueOptions, key: string, tag: string) {
