@@ -5,7 +5,9 @@ import {
   ProxyKey,
   ComputedWatch,
   VueHookMethod,
-  VueStatus
+  VueStatus,
+  VNodeDirectiveMethod,
+  VueRefs
 } from '../type/index'
 import { createNodeAt, makeCreateElement } from './vnode'
 import { observe } from './observer'
@@ -32,6 +34,11 @@ const hooks: Array<VueHookMethod> = [
 let proxyVue: any
 
 class VueReal implements Vue {
+  static cid: number
+  static directive: (key: string, options: VNodeDirectiveMethod) => void
+  static component: (key: string, options: VueOptions) => void
+  static extend: (vue: VueOptions) => Vue
+
   private _userRender: (h: any) => VNode
   private _proxyThis: any // 指向proxy代理之后的对象
   private _events: any
@@ -45,10 +52,12 @@ class VueReal implements Vue {
   public $status: VueStatus
   public $options: VueOptions
   public $createElement: any
+  public $refs: VueRefs
 
   constructor(options: VueOptions) {
     console.log('oooooooo:', options)
     this._userRender = options.render
+    this.$refs = {}
     this.$options = options
     this.$status = {
       isBeingDestroyed: false,

@@ -1,4 +1,5 @@
 import { Vue, VueOptions } from './vue'
+import directives from '../core/web/modules/directives'
 
 export interface VNode {
   tag?: string
@@ -32,13 +33,18 @@ export interface VNodeDataRender {
   on?: onType
   nativeOn?: onType
 
-  hooks: Array<any>
+  // 指令
+  directives: Array<VNodeDirective>
+  // ref引用
+  ref: string
+  refInFor: boolean
 
   [key: string]: any
 }
 
 export interface VNodeData extends VNodeDataRender {
   staticClass?: any
+  hook?: onType
 }
 
 export interface VNodeMethod {
@@ -61,4 +67,27 @@ type onType = {
 // 节点和子节点
 export interface VElement extends Element {
   _prevClass?: string
+}
+
+export interface VNodeDirective {
+  name: string
+  value: any
+  expression: string
+  arg: string
+  modifiers: Record<string, boolean>
+
+  def?: VNodeDirectiveMethod
+  oldValue?: any
+}
+
+export interface VNodeDirectiveMethod {
+  bind?: VNodeDirectiveFunc
+  inserted?: VNodeDirectiveFunc
+  update?: VNodeDirectiveFunc
+  componentUpdated?: VNodeDirectiveFunc
+  unbind?: VNodeDirectiveFunc
+}
+
+export interface VNodeDirectiveFunc {
+  (el: Element, binding: VNodeDirective, vnode: VNode, oldVnode: VNode): void
 }

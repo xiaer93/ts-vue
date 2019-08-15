@@ -1,8 +1,14 @@
 import Vue from './core'
 import { merge } from '../helper/merge'
 import { VueOptions } from '../type'
-import { registerComponent, GlobalComponents } from './component'
 import { setProxy } from './observer'
+import {
+  GlobalComponents,
+  GlobalDirectives,
+  registerComponent,
+  registerDirectives
+} from './register'
+import { DefaultDirectives } from './default'
 
 let cid = 0
 
@@ -38,7 +44,10 @@ function extend(Vue: VueClass) {
   // 创建销毁对象
   let proxyVue = new Proxy(Vue, {
     construct(target, argumentsList, newTarget) {
-      const options = merge(argumentsList[0], { components: GlobalComponents })
+      const options = merge(argumentsList[0], {
+        components: GlobalComponents,
+        directives: GlobalDirectives
+      })
       // 绑定Vue，方便或许获取静态方法extend
       options._base = proxyVue
 
@@ -57,5 +66,11 @@ function extend(Vue: VueClass) {
 
 Vue.cid = 0
 Vue.component = registerComponent
+Vue.directive = registerDirectives
 Vue.extend = createSubVue
+
+for (let key in DefaultDirectives) {
+  Vue.directive(key, DefaultDirectives[key])
+}
+
 export default extend(Vue)

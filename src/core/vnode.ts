@@ -9,15 +9,19 @@ import {
   isObject,
   isUndef,
   curry,
-  isPlainObject
+  isPlainObject,
+  resolveAsset,
+  isVNode,
+  isTrue
 } from '../helper/utils'
 import { createComponent } from './component/create-component'
 import VueReal from './core'
+import { createFnInvoker } from '../helper/events'
 
 /**
  * 虚拟节点，总共有4种类型：子节点、组件节点、文本节点、注释节点
  */
-class VNodeRel implements VNode {
+export class VNodeRel implements VNode {
   tag?: string
   data?: VNodeData
   children?: Array<VNode>
@@ -94,7 +98,6 @@ function createVElement(context: Object, a: string, b?: any, c?: any): VNode {
     console.log('Ctor', Ctor, data)
     return createComponent(Ctor, data, context, children, a)
   } else {
-    return new VNodeRel('!', undefined, undefined, a)
   }
 }
 
@@ -120,10 +123,42 @@ export function createEmptyVnode(text: string = ''): VNode {
 }
 
 // 文本节点、
-function createTextVnode(text: string): VNode {
+export function createTextVnode(text: string): VNode {
   return new VNodeRel(undefined, undefined, undefined, text)
 }
 
-function resolveAsset(options: VueOptions, key: string, tag: string) {
-  return options[key] && options[key][tag]
+export function mergeVNodeHook(def: any, hookKey: string, hook: Function) {
+  if (isVNode(def)) {
+    def = def.data.hook || (def.data.hook = {})
+  }
+  let invoker
+  const oldHook = def[hookKey]
+
+  function wrappedHook() {
+    hook.apply(this, arguments)
+    remove(invoker.fns, wrappedHook)
+  }
+
+  if (isUndef(oldHook)) {
+    invoker = createFnInvoker([wrappedHook])
+  } else {
+    if (isDef(oldHook.fns) && isTrue(oldHook.merged)) {
+      invoker = oldHook
+      invoker.fns.push(wrappedHook)
+    } else {
+      invoker = createFnInvoker([oldHook, wrappedHook])
+    }
+  }
+
+  invoker.merged = true
+  def[hookKey] = invoker
+}
+
+function remove(arr: Array<any>, item: any): void {
+  if (arr.length) {
+    const index = arr.indexOf(item)
+    if (item > -1) {
+      arr.splice(index, 1)
+    }
+  }
 }

@@ -1,4 +1,5 @@
-import { VNode } from '../type'
+import { VNode, VueOptions } from '../type'
+import { VNodeRel } from '../core/vnode'
 
 export function isArray(val: any): val is Array<any> {
   return Array.isArray(val)
@@ -47,6 +48,10 @@ export function isString(val: any): val is string {
   return typeof val === 'string'
 }
 
+export function isVNode(val: any): val is VNode {
+  return val instanceof VNodeRel
+}
+
 export function curry(fn: Function, argLen: number = fn.length, ...args: any[]): any {
   return args.length < argLen ? curry.bind(null, fn, argLen, ...args) : fn(...args)
 }
@@ -65,4 +70,24 @@ export function cache(fn: (val: any) => any) {
   return function(val: any): any {
     return hit[val] || (hit[val] = fn(val))
   }
+}
+
+export function resolveAsset(options: VueOptions, key: string, tag: string) {
+  return options[key] && options[key][tag]
+}
+
+export function remove(data?: Array<any>, item?: any) {
+  if (isUndef(data)) return
+
+  let index: number = data.findIndex(v => v === item)
+  if (index !== -1) {
+    data.splice(index, 1)
+  }
+}
+
+export function contains(data?: Array<any>, item?: any): boolean {
+  if (isUndef(data) || isUndef(item)) return false
+
+  let index: number = data.findIndex(v => v === item)
+  return index !== -1
 }

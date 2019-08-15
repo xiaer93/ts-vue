@@ -28,7 +28,7 @@ const normalizeEvent = cache((name: string) => {
 /**
  * 在此处不绑定this
  */
-function createFnInvoker(fns: Function | Array<Function>, vm: Vue) {
+export function createFnInvoker(fns: Function | Array<Function>) {
   function invoker(...args) {
     let fns = invoker.fns
     if (isArray(fns)) {

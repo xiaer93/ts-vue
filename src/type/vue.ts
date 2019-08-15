@@ -33,6 +33,7 @@ export interface Vue {
 
   $options: VueOptions
   $status: VueStatus
+  $refs: VueRefs
 
   $createElement: (a: any, b: any, c: any) => VNode
   $destroy: () => void
@@ -79,4 +80,8 @@ export interface VueStatus {
   isBeingDestroyed: boolean
   isMounted: boolean
   isDestroyed: boolean
+}
+
+export interface VueRefs {
+  [key: string]: Array<Element> | Element | undefined
 }

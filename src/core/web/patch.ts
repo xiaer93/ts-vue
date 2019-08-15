@@ -14,10 +14,21 @@ type ArrayOf<T> = {
 type VNodeQueue = Array<VNode>
 type ModuleHooks = ArrayOf<Module>
 
-const hooks: (keyof Module)[] = ['create', 'destroy', 'insert', 'remove', 'update']
+const hooks: (keyof Module)[] = [
+  'create',
+  'destroy',
+  'insert',
+  'remove',
+  'update',
+  'prepatch',
+  'postpatch',
+  'init'
+]
 
 let insertedVnodeQueue: VNodeQueue = []
 let cbs = {} as ModuleHooks
+
+export const emptyNode = createEmptyVnode()
 
 export function createPatcher(modules?: Array<Partial<Module>>) {
   modules = isArray(modules) ? modules : []
@@ -61,31 +72,28 @@ function patch(oldVnode: VNode | null, vnode: VNode | null) {
     webMethods.append(parentElm, createElm(vnode))
   }
 
+  // hook-insert
+  invokeInsertHook()
   return parentElm
-  // hook-insert   节点自己的
-  // for(let i = 0; i < insertedVnodeQueue.length; ++i) {
-  //   insertedVnodeQueue[i]!.data!.hook.insert(insertedVnodeQueue[i])
-  // }
 }
 
 /**
  * 比较相同节点(标签相同)
  */
 function patchNode(oldVnode: VNode, vnode: VNode) {
-  let oldCh = oldVnode.children,
-    ch = vnode.children,
-    elm = (vnode.elm = oldVnode.elm!),
-    data = vnode.data
-
   let i: any
+  const data = vnode.data,
+    oldCh = oldVnode.children,
+    ch = vnode.children,
+    elm = (vnode.elm = oldVnode.elm!)
+
   vnode.componentInstance = oldVnode.componentInstance
-  if (isDef(data) && isDef((i = data.hook)) && isDef((i = i.prepatch))) {
-    i(oldVnode, vnode)
-  }
 
   if (oldVnode === vnode) return
 
-  invokeHooks('update')(oldVnode, vnode)
+  invokeVnodeHooks(oldVnode, vnode, 'prepatch')
+  // invokeHooks(oldVnode, vnode, 'update')
+  invokeCbHooks('update')(oldVnode, vnode)
 
   if (oldCh) {
     // 子节点
@@ -105,6 +113,8 @@ function patchNode(oldVnode: VNode, vnode: VNode) {
       webMethods.setTextContent(elm!, vnode.text!)
     }
   }
+
+  invokeVnodeHooks(oldVnode, vnode, 'postpatch')
 }
 
 /**
@@ -187,7 +197,7 @@ function removeChildren(parentElm: Node, vnodes: Array<VNode>, start: number, en
         rm = createRmCb(ch.elm!, listeners)
         // fixme: destroy和remove的先后顺序？
         invokeDestroyHook(ch)
-        invokeHooks('remove')(ch, rm)
+        invokeCbHooks('remove')(ch, rm)
         rm()
       } else {
         webMethods.remove(parentElm!, ch.elm!)
@@ -230,33 +240,70 @@ function createElm(vnode: VNode): Node {
   } else {
     vnode.elm = webMethods.createElement(vnode.tag!)
 
-    const emptyNode = createEmptyVnode()
+    // 先执行子元素hook
+    createChildren(vnode, vnode.children)
     //hook-create
-    invokeHooks('create')(emptyNode, vnode)
-
-    // 遍历子节点
-    if (isArray(vnode.children)) {
-      for (let ch of vnode.children) {
-        if (ch !== null) {
-          webMethods.append(vnode.elm, createElm(ch))
-        }
-      }
-    } else if (isPrimitive(vnode.text)) {
-      webMethods.append(vnode.elm, webMethods.createText(vnode.text!))
-    }
-
-    insertedVnodeQueue.push(vnode)
+    invokeCreateHook(vnode)
   }
 
   return vnode.elm
 }
 
-function invokeHooks(hook: keyof Module) {
+function createChildren(vnode: VNode, children: Array<VNode>) {
+  for (let ch of children) {
+    if (ch !== null) {
+      webMethods.append(vnode.elm, createElm(ch))
+    }
+  }
+}
+
+// 执行全局的hook函数
+function invokeCbHooks(hook: keyof Module) {
   let hookHandler = cbs[hook]
 
   return function(...args) {
     for (let i = 0; i < hookHandler.length; ++i) {
       hookHandler[i](...args)
+    }
+  }
+}
+
+// 执行vnode节点的hook函数
+function invokeVnodeHooks(oldVnode: VNode | null, vnode: VNode, hookKey: keyof Module) {
+  let i: any
+  if (isDef((i = vnode.data)) && isDef((i = i.hook)) && (i = i[hookKey])) {
+    oldVnode ? i(oldVnode, vnode) : i(vnode)
+  }
+}
+
+function invokeHooks(oldVnode, vnode: VNode, hookKey: string) {
+  invokeVnodeHooks(oldVnode, vnode, hookKey)
+  invokeCbHooks(hookKey)(oldVnode, vnode)
+}
+
+function invokeCreateHook(vnode: VNode) {
+  invokeCbHooks('create')(emptyNode, vnode)
+  let i: any = vnode.data.hook
+  if (isDef(i)) {
+    if (isDef(i.create)) i.create(emptyNode, vnode)
+    if (isDef(i.insert)) insertedVnodeQueue.push(vnode)
+  }
+}
+
+function invokeInsertHook() {
+  for (let i = 0, len = insertedVnodeQueue.length; i < length; ++i) {
+    insertedVnodeQueue[i].data.hook.insert(insertedVnodeQueue[i])
+  }
+  insertedVnodeQueue = []
+}
+
+function invokeDestroyHook(vnode: VNode) {
+  invokeCbHooks('destroy')(vnode)
+  if (isArray(vnode.children)) {
+    for (let ch of vnode.children) {
+      if (ch !== null) {
+        invokeDestroyHook(ch)
+      }
     }
   }
 }
@@ -270,23 +317,10 @@ function createRmCb(elm: Node, listeners: number) {
   }
 }
 
-function invokeDestroyHook(vnode: VNode) {
-  invokeHooks('destroy')(vnode)
-  if (isArray(vnode.children)) {
-    for (let ch of vnode.children) {
-      if (ch !== null) {
-        invokeDestroyHook(ch)
-      }
-    }
-  }
-}
-
 function createComponent(vnode: VNode): boolean {
   let i: any = vnode.data
   if (isDef(i)) {
-    if (isDef((i = i.hook)) && isDef((i = i.init))) {
-      i(vnode)
-    }
+    invokeVnodeHooks(null, vnode, 'init')
 
     if (isDef(vnode.componentInstance)) {
       initComponent(vnode)
@@ -296,6 +330,7 @@ function createComponent(vnode: VNode): boolean {
   return false
 }
 
+// 组件vnode没有加入insertedVnodeQueue
 function initComponent(vnode) {
   vnode.elm = vnode.componentInstance.$el
 }

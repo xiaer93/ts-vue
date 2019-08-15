@@ -1,9 +1,6 @@
 import { Vue, VNodeData, VNode, VueOptions, VueClass } from '../../type'
-import { createSubVue } from '..'
 import { createVnode } from '../vnode'
-import { isDef } from '../../helper/utils'
 import { callhook } from '../../helper/hook'
-import { observe } from '../observer'
 import { updateComponentListeners } from './events'
 
 const componentVNodeHooks = {
