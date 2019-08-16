@@ -34,6 +34,8 @@ export interface Vue {
   $options: VueOptions
   $status: VueStatus
   $refs: VueRefs
+  $slots?: VueSlots
+  $vnode?: VNode
 
   $createElement: (a: any, b: any, c: any) => VNode
   $destroy: () => void
@@ -44,6 +46,8 @@ export interface Vue {
   $off: (event?: string | Array<string>, fn?: Function) => Vue
   $once: (event?: string | Array<string>, fn?: Function) => Vue
   $emit: (event: string, ...args: any[]) => Vue
+
+  _t: RenderSlot
 }
 
 export interface VueClass {
@@ -84,4 +88,13 @@ export interface VueStatus {
 
 export interface VueRefs {
   [key: string]: Array<Element> | Element | undefined
+}
+
+export interface VueSlots {
+  [key: string]: Array<VNode>
+}
+
+// render方法
+export interface RenderSlot {
+  (name: string, fallback?: Array<VNode>, props?: any, bindObject?: any): Array<VNode> | undefined
 }

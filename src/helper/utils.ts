@@ -91,3 +91,7 @@ export function contains(data?: Array<any>, item?: any): boolean {
   let index: number = data.findIndex(v => v === item)
   return index !== -1
 }
+
+export function flatten(val: Array<any>): Array<any> {
+  return [].concat(...val.map(v => (isArray(v) ? flatten(v) : v)))
+}

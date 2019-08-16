@@ -39,12 +39,20 @@ export interface VNodeDataRender {
   ref: string
   refInFor: boolean
 
+  // 插槽
+  slot: string
+  scopedSlots: VNodeScopedSlots
+
   [key: string]: any
 }
 
 export interface VNodeData extends VNodeDataRender {
   staticClass?: any
   hook?: onType
+}
+
+export interface VNodeScopedSlots {
+  [key: string]: (props: Object) => VNode
 }
 
 export interface VNodeMethod {

@@ -7,7 +7,8 @@ import {
   VueHookMethod,
   VueStatus,
   VNodeDirectiveMethod,
-  VueRefs
+  VueRefs,
+  VueSlots
 } from '../type/index'
 import { createNodeAt, makeCreateElement } from './vnode'
 import { observe } from './observer'
@@ -19,6 +20,7 @@ import { warn, invokeWithErrorHandling } from '../helper/warn'
 import { callhook } from '../helper/hook'
 import nextTick from '../helper/next-tick'
 import { updateComponentListeners } from './component/events'
+import { resolveSlot } from './slot'
 
 const hooks: Array<VueHookMethod> = [
   'beforeCreate',
@@ -53,6 +55,9 @@ class VueReal implements Vue {
   public $options: VueOptions
   public $createElement: any
   public $refs: VueRefs
+  public $vnode?: VNode
+  public $slots?: VueSlots
+  public $scopedSlots?: any
 
   constructor(options: VueOptions) {
     console.log('oooooooo:', options)
@@ -155,6 +160,25 @@ class VueReal implements Vue {
     return vm
   }
 
+  public _t(
+    name: string,
+    fallback?: Array<VNode>,
+    props?: any,
+    bindObject?: any
+  ): Array<VNode> | undefined {
+    const scopedSlotFn = this.$scopedSlots[name]
+
+    let nodes: Array<VNode> | undefined
+    if (scopedSlotFn) {
+      props = props || {}
+      nodes = scopedSlotFn(props) || fallback
+    } else {
+      nodes = this.$slots[name] || fallback
+    }
+    return nodes
+  }
+  public _u = resolveScopedSlots
+
   // 指定代理后的Vue实例，通过代理后的实例才能访问到data、computed、methods等等
   public _init(thisProxy: any) {
     const options = this.$options
@@ -179,6 +203,7 @@ class VueReal implements Vue {
     const vnodeComponentOptions = parentVnode.componentOptions
     opts.propsData = vnodeComponentOptions.propsData
     opts._parentListeners = vnodeComponentOptions.listeners
+    opts._renderChildren = vnodeComponentOptions.children
   }
   private _mount() {
     const elm = this.$el
@@ -211,6 +236,7 @@ class VueReal implements Vue {
     this._initHook()
 
     callhook(this._proxyThis, 'beforeCreate')
+    this._initRender()
     this._initEvent()
     this._initProps()
     this._initMethods()
@@ -299,6 +325,27 @@ class VueReal implements Vue {
       updateComponentListeners(this, listeners)
     }
   }
+  private _initRender() {
+    const options = this.$options
+    const parentVnode: VNode = (this.$vnode = options.parentVnode)
+    const renderContext = parentVnode && parentVnode.context
+    this.$slots = resolveSlot(options._renderChildren, renderContext)
+
+    this.$scopedSlots = (parentVnode && parentVnode.data.scopedSlots) || {}
+  }
 }
 
 export default VueReal
+
+function resolveScopedSlots(fns: any, res: any) {
+  res = res || {}
+  for (let i = 0, len = fns.length; i < len; ++i) {
+    if (isArray(fns[i])) {
+      resolveScopedSlots(fns[i], res)
+    } else {
+      res[fns[i].key] = fns[i].fn
+    }
+  }
+
+  return res
+}

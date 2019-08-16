@@ -12,7 +12,8 @@ import {
   isPlainObject,
   resolveAsset,
   isVNode,
-  isTrue
+  isTrue,
+  flatten
 } from '../helper/utils'
 import { createComponent } from './component/create-component'
 import VueReal from './core'
@@ -59,16 +60,16 @@ let bindContenxt: Vue | undefined = undefined
 /**
  * 创建虚拟节点：子节点、组件节点
  */
-function createVElement(context: Object, a: string): VNode
-function createVElement(context: Object, a: string, b: VNodeDataRender): VNode
-function createVElement(context: Object, a: string, c: string | Array<VNode | string>): VNode
+function createVElement(context: Vue, a: string): VNode
+function createVElement(context: Vue, a: string, b: VNodeDataRender): VNode
+function createVElement(context: Vue, a: string, c: string | Array<VNode | string>): VNode
 function createVElement(
-  context: Object,
+  context: Vue,
   a: string,
   b: VNodeDataRender,
   c: string | Array<VNode | string>
 ): VNode
-function createVElement(context: Object, a: string, b?: any, c?: any): VNode {
+function createVElement(context: Vue, a: string, b?: any, c?: any): VNode {
   let data: VNodeData | undefined, children: Array<VNode> | undefined, Ctor: any
 
   if (isUndef(a)) return createEmptyVnode()
@@ -81,8 +82,9 @@ function createVElement(context: Object, a: string, b?: any, c?: any): VNode {
   if (isPlainObject(b)) {
     data = b
   } else {
-    children = isArray(b) ? b : [isPrimitive(b) ? createTextVnode(b) : b]
+    children = isArray(b) ? flatten(b) : [isPrimitive(b) ? createTextVnode(b) : b]
   }
+  console.log(children)
 
   if (isArray(children)) {
     for (let i = 0; i < children.length; ++i) {
@@ -101,7 +103,7 @@ function createVElement(context: Object, a: string, b?: any, c?: any): VNode {
   }
 }
 
-export function makeCreateElement(context: Object): Function {
+export function makeCreateElement(context: Vue): Function {
   bindContenxt = context
   return curry(createVElement, 2)(context)
 }

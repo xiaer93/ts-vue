@@ -110,6 +110,7 @@ function updateChildComponent(
   const oldListeners = vm.$options._parentListeners
   vm.$options.propsData = propsData
   vm.$options._parentListeners = listeners
+  vm.$options._renderChildren = renderChildren
   updateComponentListeners(vm, listeners, oldListeners)
 
   vm._initProps()
