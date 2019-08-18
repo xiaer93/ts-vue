@@ -13,6 +13,10 @@ export function isFunction(val: any): val is Function {
   return getType(val) === '[object Function]'
 }
 
+export function isNull(val: any): val is null {
+  return val === null
+}
+
 export function isSameVnode(oldVnode: VNode, vnode: VNode): boolean {
   return oldVnode.tag === vnode.tag
 }
@@ -35,6 +39,10 @@ export function isTruth(val: any): boolean {
 
 export function isTrue(val: any): val is true {
   return val === true
+}
+
+export function isFalse(val: any): val is false {
+  return val === false
 }
 
 export function isObject(val: any): val is object {
@@ -111,4 +119,12 @@ export function once(fn: Function): Function {
 
 export function toNumber(val: any): number {
   return parseInt(val)
+}
+
+export function always(val: any): Function {
+  return () => val
+}
+
+export function hasOwn(obj: Object, key: string | number | symbol): boolean {
+  return !isNull(obj) && obj.hasOwnProperty(key)
 }

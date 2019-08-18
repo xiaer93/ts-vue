@@ -1,40 +1,50 @@
 import Dep from './dep'
-import { isPrimitive } from '../../helper/utils'
+import { isPrimitive, isFalse, always, hasOwn, isDef, isArray } from '../../helper/utils'
 import { VueClass, Vue } from '../../type'
 import { merge } from '../../helper/merge'
 import { GlobalComponents } from '../component'
+import { createProxy, isProxy, defineProxyKey, defineProxyArray } from './cProxy'
 
 // 将data设为响应式的，data可以为数组、对象
 // proxy对象，所有的操作都会被拦截
 // 对数组 [].push(1)，会触发2次set，key为0， length
-export function observe(data: any) {
-  if (isPrimitive(data)) {
-    return data
+
+// observe创建响应式对象
+export function observe(obj: any) {
+  if (isPrimitive(obj) || isProxy(obj)) {
+    return obj
   }
 
-  let dep = new Dep()
+  let proxyObj = createProxy(obj)
 
-  let proxyData = new Proxy(data, {
-    get(target, key) {
-      Dep.Target && dep.depend()
-      return Reflect.get(target, key)
-    },
-    set(target, key, value) {
-      // 如果给传入的值复制对象，则继续添加依赖。添加的依赖watch怎么收集的？还是原有就有？
-      // 继续收集依赖，Dep.Target有render-watch托底，即每次可以给新的依赖添加watch
-      if (!isPrimitive(value)) {
-        value = observe(value)
-      }
-      const retStatus = Reflect.set(target, key, value)
-      dep.notify()
-      return retStatus
+  if (isArray(obj)) {
+    defineProxyArray(obj, {})
+  } else {
+    for (let key in obj) {
     }
-  })
-
-  for (let key in data) {
-    let value = data[key]
-    data[key] = observe(value)
   }
+
+  // let proxyData = new Proxy(data, {
+  //   get(target, key) {
+  //     Dep.Target && dep.depend()
+  //     return Reflect.get(target, key)
+  //   },
+  //   set(target, key, value) {
+  //     // 如果给传入的值复制对象，则继续添加依赖。添加的依赖watch怎么收集的？还是原有就有？
+  //     // 继续收集依赖，Dep.Target有render-watch托底，即每次可以给新的依赖添加watch
+  //     if (!isPrimitive(value)) {
+  //       value = observe(value)
+  //     }
+  //     const retStatus = Reflect.set(target, key, value)
+  //     dep.notify()
+  //     return retStatus
+  //   }
+  // })
+
+  // for (let key in data) {
+  //   let value = data[key]
+  //   data[key] = observe(value)
+  // }
 
   return proxyData
 }
@@ -69,4 +79,62 @@ export function setProxy(vm: Vue) {
       }
     }
   })
+}
+
+// 给响应式对象添加响应式属性值
+export function defineReactive(
+  obj: any,
+  key: string,
+  val?: any,
+  customSetter?: Function,
+  shallow?: boolean
+) {
+  if (!isProxy(obj)) {
+    return
+  }
+
+  let dep: Dep = new Dep()
+
+  val = isDef(val) ? val : obj[key]
+  val = shallow ? val : observe(val)
+
+  defineProxyKey(obj, key, {
+    get(target, key) {
+      Dep.Target && dep.depend()
+      return val
+    },
+    set(target, key, newVal) {
+      if (val === newVal || newVal === val.__originObj) return false
+
+      if (customSetter) {
+        return customSetter()
+      }
+
+      newVal = shallow ? newVal : observe(newVal)
+      val = newVal
+      dep.notify()
+    }
+  })
+
+  // let proxyData = createProxy(data, {
+  //   get(target, key) {
+  //     Dep.Target && dep.depend()
+  //     val = Reflect.get(target, key)
+  //     return val
+  //   },
+  //   set(target, key, newVal) {
+  //     // 如果给传入的值复制对象，则继续添加依赖。添加的依赖watch怎么收集的？还是原有就有？
+  //     // 继续收集依赖，Dep.Target有render-watch托底，即每次可以给新的依赖添加watch
+  //     if(val === newVal) return false
+
+  //     customSetter && customSetter()
+
+  //     newVal = shallow ? newVal : observe(newVal)
+  //     const retStatus = Reflect.set(target, key, newVal)
+  //     dep.notify()
+  //     return retStatus
+  //   }
+  // })
+
+  // return proxyData
 }

@@ -1,6 +1,5 @@
 import { VNode, VNodeMethod, VNodeComputed, VNodeWatch, VNodeData } from './vnode'
 import { Watch } from './watch'
-import { create } from 'domain'
 
 export type VueHookMethod =
   | 'beforeCreate'
@@ -48,6 +47,8 @@ export interface Vue {
   $emit: (event: string, ...args: any[]) => Vue
 
   _t: RenderSlot
+
+  [key: string]: any
 }
 
 export interface VueClass {
