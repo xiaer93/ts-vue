@@ -50,7 +50,6 @@ export function createPatcher(modules?: Array<Partial<Module>>) {
  * 挂载节点
  */
 function patch(oldVnode: VNode | null, vnode: VNode | null) {
-  if (vnode.tag === 'button') debugger
   if (!isTruth(oldVnode)) {
     return createElm(vnode)
   }

@@ -30,6 +30,16 @@ const webMethods = {
   },
   nextSibling(node: Node): Node | null {
     return node.nextSibling
+  },
+  removeClass(node: Element, cls?: string) {
+    if (!cls || !(cls = cls.trim())) return
+
+    node.classList.remove(cls)
+  },
+  addClass(node: Element, cls?: string) {
+    if (!cls || !(cls = cls.trim())) return
+
+    node.classList.add(cls)
   }
 }
 

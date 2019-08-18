@@ -5,6 +5,7 @@ import AttrsModule from './attrs'
 import DomPropsModule from './dom-props'
 import DirectiveModule from './directives'
 import RefsModule from './ref'
+import TransitionModule from './transition'
 
 export default [
   styleModule,
@@ -13,5 +14,6 @@ export default [
   AttrsModule,
   DomPropsModule,
   DirectiveModule,
-  RefsModule
+  RefsModule,
+  TransitionModule
 ]

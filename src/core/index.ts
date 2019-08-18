@@ -6,9 +6,11 @@ import {
   GlobalComponents,
   GlobalDirectives,
   registerComponent,
-  registerDirectives
+  registerDirectives,
+  registerPlugins,
+  GlobalMixins
 } from './register'
-import { DefaultDirectives } from './default'
+import { DefaultDirectives, DefaultComponents } from './default'
 
 let cid = 0
 
@@ -44,10 +46,11 @@ function extend(Vue: VueClass) {
   // 创建销毁对象
   let proxyVue = new Proxy(Vue, {
     construct(target, argumentsList, newTarget) {
-      const options = merge(argumentsList[0], {
+      let options = merge(argumentsList[0], {
         components: GlobalComponents,
         directives: GlobalDirectives
       })
+      options = merge(options, GlobalMixins.value)
       // 绑定Vue，方便或许获取静态方法extend
       options._base = proxyVue
 
@@ -68,9 +71,14 @@ Vue.cid = 0
 Vue.component = registerComponent
 Vue.directive = registerDirectives
 Vue.extend = createSubVue
+Vue.use = registerPlugins
 
 for (let key in DefaultDirectives) {
   Vue.directive(key, DefaultDirectives[key])
+}
+
+for (let key in DefaultComponents) {
+  Vue.component(key, DefaultComponents[key])
 }
 
 export default extend(Vue)

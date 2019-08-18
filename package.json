@@ -123,5 +123,7 @@
     "webpack": "^4.39.1",
     "webpack-dev-middleware": "^3.7.0",
     "webpack-hot-middleware": "^2.25.0"
+  },
+  "dependencies": {
   }
 }

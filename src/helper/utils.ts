@@ -1,6 +1,10 @@
 import { VNode, VueOptions } from '../type'
 import { VNodeRel } from '../core/vnode'
 
+export function isNumber(val: any): val is number {
+  return typeof val === 'number'
+}
+
 export function isArray(val: any): val is Array<any> {
   return Array.isArray(val)
 }
@@ -94,4 +98,17 @@ export function contains(data?: Array<any>, item?: any): boolean {
 
 export function flatten(val: Array<any>): Array<any> {
   return [].concat(...val.map(v => (isArray(v) ? flatten(v) : v)))
+}
+
+export function once(fn: Function): Function {
+  let isRun = false
+  return function() {
+    if (isRun) return
+    isRun = true
+    fn.apply(null, arguments)
+  }
+}
+
+export function toNumber(val: any): number {
+  return parseInt(val)
 }

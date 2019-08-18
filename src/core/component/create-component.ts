@@ -2,6 +2,8 @@ import { Vue, VNodeData, VNode, VueOptions, VueClass } from '../../type'
 import { createVnode } from '../vnode'
 import { callhook } from '../../helper/hook'
 import { updateComponentListeners } from './events'
+import { isTrue } from '../../helper/utils'
+import { resolveSlot } from '../slot'
 
 const componentVNodeHooks = {
   init(vnode: VNode) {
@@ -54,6 +56,14 @@ export function createComponent(
 
   const listeners = data.on
   data.on = data.nativeOn
+
+  // if(isTrue(Ctor.options.abstract)) {
+  //   let slot = data.slot
+  //   data = {}
+  //   if(slot) {
+  //     data.slot = slot
+  //   }
+  // }
 
   installComponentHook(data)
 
@@ -115,6 +125,8 @@ function updateChildComponent(
 
   vm._initProps()
 
+  // 更新插槽---每个vnode都有context
+  vm.$slots = resolveSlot(renderChildren, parentVnode.context)
   vm.$forceUpdate()
 }
 
