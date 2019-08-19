@@ -24,7 +24,6 @@ export interface ProxyKey {
 export interface Vue {
   _events: any
 
-  _proxyKey: ProxyKey
   _computedWatched: ComputedWatch
 
   _watcher?: Watch

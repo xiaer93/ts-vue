@@ -25,7 +25,7 @@ let v = new Vue({
       },
       // dom属性
       domProps: {
-        innerHTML: 'baz'
+        // innerHTML: 'baz'
       },
 
       // 事件有两条线，1.组件的事件是listeners；2.标签和.native事件是on；二者处理方式不同
@@ -43,6 +43,6 @@ let v = new Vue({
 
 window.v = v
 
-// setTimeout(() => {
-//   v.name = 'lly555'
-// }, 2000)
+setTimeout(() => {
+  v.name = 'lly555'
+}, 2000)

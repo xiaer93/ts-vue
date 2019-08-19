@@ -1,7 +1,6 @@
 import Vue from './core'
 import { merge } from '../helper/merge'
 import { VueOptions } from '../type'
-import { setProxy } from './observer'
 import {
   GlobalComponents,
   GlobalDirectives,
@@ -54,13 +53,15 @@ function extend(Vue: VueClass) {
       // 绑定Vue，方便或许获取静态方法extend
       options._base = proxyVue
 
-      let vm = new target(options)
-      let pvmObj = setProxy(vm)
-      let pvm = pvmObj.proxy
+      return new target(options)
 
-      // 传入proxyThis，获取代理后的对象
-      pvm._init(pvm)
-      return pvm
+      // let vm = new target(options)
+      // let pvmObj = setProxy(vm)
+      // let pvm = pvmObj.proxy
+
+      // // 传入proxyThis，获取代理后的对象
+      // pvm._init(pvm)
+      // return pvm
     }
   })
 
@@ -81,4 +82,4 @@ for (let key in DefaultComponents) {
   Vue.component(key, DefaultComponents[key])
 }
 
-export default extend(Vue)
+export default Vue

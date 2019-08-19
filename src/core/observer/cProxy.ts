@@ -1,6 +1,15 @@
 import { hasOwn } from '../../helper/utils'
+import Vue from '..'
 
-const proxyFlag = Symbol('proxy object')
+export interface Strategy {
+  [key: string]: StrategyMethod | null
+}
+export interface StrategyMethod {
+  get: (target: any, key: string) => any
+  set: (target: any, key: string, val: any) => any
+}
+
+const proxyFlag = Symbol('[object Proxy]')
 
 const defaultStrategy = {
   get(target: any, key: string) {
@@ -12,80 +21,55 @@ const defaultStrategy = {
 }
 
 /**
- * 创建proxy对象，针对不同key执行不同策略
- */
-// class CProxy {
-//     static __proxyFlag__ = proxyFlag
-//     proxy: ProxyConstructor
-//     strategys: Strategy
-
-//     constructor (obj: any) {
-//         const self = this
-//         this.strategys = {default: defaultStrategy}
-//         this.proxy = new Proxy(obj, {
-//             get(target, key: string) {
-//                 const strategy = self.strategys[key] || self.strategys['default']
-//                 return strategy.get(target, key)
-//             },
-//             set(target, key: string, val) {
-//                 const strategy = self.strategys[key] || self.strategys['default']
-//                 return strategy.set(target, key, val)
-//             }
-//         })
-//     }
-//     add (key: string, handler: StrategyMethod) {
-//         this.strategys[key] = handler
-//     }
-//     delete (key: string) {
-//         if(hasOwn(this.strategys, key)) {
-//             this.strategys[key] = null
-//         }
-//     }
-// }
-
-/**
  * 创建响应式对象
  */
 export function createProxy(obj: any) {
-  let privateObj = Object.create(null)
+  let __privateObj = Object.create(null)
+  let __strategys: Strategy = { default: defaultStrategy }
+  let __originObj = obj
+  let __proxyFlag = proxyFlag
+
+  __privateObj.__strategys = __strategys
+  __privateObj.__originObj = __originObj
+  __privateObj.__proxyFlag = __proxyFlag
 
   let proxy: any = new Proxy(obj, {
     get(target, key: string) {
       if (isPrivateKey(key)) {
-        return privateObj[key]
+        return __privateObj[key]
       }
 
-      const strategy = proxy.__strategys[key] || proxy.__strategys['default']
+      const strategy: StrategyMethod = (__strategys[key] ||
+        __strategys['default']) as StrategyMethod
       return strategy.get(target, key)
     },
     set(target, key: string, val: any) {
       if (isPrivateKey(key)) {
-        privateObj[key] = val
+        __privateObj[key] = val
         return
       }
-      const strategy = proxy.__strategys[key] || proxy.__strategys['default']
+
+      const strategy: StrategyMethod = (__strategys[key] ||
+        __strategys['default']) as StrategyMethod
       return strategy.set(target, key, val)
     },
     ownKeys(target) {
-      const privateKeys = Object.keys(privateObj)
+      const privateKeys = Object.keys(__privateObj)
       return Object.keys(target).filter(v => !privateKeys.includes(v))
     }
   })
-  proxy.__originObj = obj
-  proxy.__proxyFlag__ = proxyFlag
-  proxy.__strategys = { default: defaultStrategy }
 
   return proxy
 }
 
 export function isProxy(val: any): boolean {
-  return val.__proxyFlag__ === proxyFlag
+  return val.__proxyFlag === proxyFlag
 }
 
 /**
  * 给响应式对象定义响应式属性
  */
-export function defineProxyKey(obj: any, key: string, handler: StrategyMethod) {
+export function defineProxyObject(obj: any, key: string, handler: StrategyMethod) {
   if (!isProxy(obj)) return
 
   let __strategys: Strategy = obj.__strategys
@@ -97,6 +81,7 @@ export function defineProxyKey(obj: any, key: string, handler: StrategyMethod) {
  */
 export function defineProxyArray(obj: Array<any>, handler: StrategyMethod) {
   if (!isProxy(obj)) return
+
   let __strategys: Strategy = (obj as any).__strategys
   __strategys['default'] = handler
 }
@@ -105,10 +90,16 @@ function isPrivateKey(key: string) {
   return key.substr(0, 2) === '__'
 }
 
-interface Strategy {
-  [key: string]: StrategyMethod | null
-}
-interface StrategyMethod {
-  get: (target: any, key: string) => any
-  set: (target: any, key: string, val: any) => any
+export function proxyForVm(vm: Vue, source: any, key: string) {
+  if (!isProxy(vm)) return
+
+  let __strategys: Strategy = (vm as any).__strategys
+  __strategys[key] = {
+    get(target: any, key: string) {
+      return Reflect.get(source, key)
+    },
+    set(target: any, key: string, newVal: any) {
+      return Reflect.set(source, key, newVal)
+    }
+  }
 }

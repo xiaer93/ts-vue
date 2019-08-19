@@ -39,3 +39,23 @@
 1. 虚拟dom
 2. Proxy和Reflect使用
 3. 事件循环---nextTick等
+
+
+class P {
+  constructor () {
+    this.name = 'cje'
+
+    return new Proxy(this, {
+      get (target, key) {
+        return Reflect.get(target, key)
+      }
+    })
+  }
+
+  init () {
+    
+
+  }
+}
+let p = new P()
+p即是一个代理对象

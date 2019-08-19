@@ -11,7 +11,7 @@ import {
   VueSlots
 } from '../type/index'
 import { createNodeAt, makeCreateElement } from './vnode'
-import { observe } from './observer'
+import { observe, defineObject, observeComputed } from './observer'
 import patch from './web/index'
 import webMethods from './web/dom'
 import Watch from './observer/watch'
@@ -21,6 +21,8 @@ import { callhook } from '../helper/hook'
 import nextTick from '../helper/next-tick'
 import { updateComponentListeners } from './component/events'
 import { resolveSlot } from './slot'
+import { createProxy, proxyForVm } from './observer/cProxy'
+import { initData, initProps, initMethods, initComputed, initWatch } from './init'
 
 const hooks: Array<VueHookMethod> = [
   'beforeCreate',
@@ -47,7 +49,6 @@ class VueReal implements Vue {
 
   public _vnode: VNode | null | undefined
   public _watcher?: Watch
-  public _proxyKey: ProxyKey
   public _computedWatched: ComputedWatch
 
   public $el: Node | null | undefined
@@ -70,8 +71,13 @@ class VueReal implements Vue {
       isDestroyed: false
     }
 
-    this._proxyKey = {}
     this._computedWatched = {}
+
+    this._proxyThis = createProxy(this)
+
+    this._init()
+
+    return this._proxyThis
   }
   public $destroy() {
     if (this.$status.isBeingDestroyed) return
@@ -180,10 +186,9 @@ class VueReal implements Vue {
   public _u = resolveScopedSlots
 
   // 指定代理后的Vue实例，通过代理后的实例才能访问到data、computed、methods等等
-  public _init(thisProxy: any) {
+  private _init() {
     const options = this.$options
-    this._proxyThis = thisProxy
-    this.$createElement = makeCreateElement(thisProxy)
+    this.$createElement = makeCreateElement(this._proxyThis)
 
     if (options.isComponent) {
       this._initComponent()
@@ -238,78 +243,21 @@ class VueReal implements Vue {
     callhook(this._proxyThis, 'beforeCreate')
     this._initRender()
     this._initEvent()
-    this._initProps()
-    this._initMethods()
-    this._initData()
-    this._initComputed()
-    this._initWatch()
+    initProps(this)
+    initMethods(this)
+    initData(this)
+    initComputed(this)
+    initWatch(this)
     callhook(this._proxyThis, 'created')
   }
   private _render(): VNode {
-    return this._userRender(this.$createElement)
+    return this._userRender.call(this._proxyThis, this.$createElement)
   }
   private _update(vnode: VNode | null) {
     let oldVnode: VNode = this._vnode!
     this._vnode = vnode
 
     this.$el = patch(oldVnode, vnode)
-  }
-  private _initData() {
-    // data如果为函数，则执行有可能会get？
-    let proxyData: any
-    let data: any = this.$options.data
-    data = this.$options.data = isFunction(data) ? data() : data
-
-    for (let key in data) {
-      if (this._proxyKey[key]) {
-        warn('data的key不合法')
-      }
-    }
-    this.$options.data = proxyData = observe(data)
-    for (let key in data) {
-      this._proxyKey[key] = proxyData
-    }
-  }
-  public _initProps() {
-    let proxyProp: any
-    const propsData = this.$options.propsData
-
-    if (!isTruth(propsData)) {
-      return
-    }
-
-    this.$options.propsData = proxyProp = observe(propsData)
-    for (let key in propsData) {
-      this._proxyKey[key] = proxyProp
-    }
-  }
-  private _initMethods() {
-    const methods = this.$options.methods
-
-    for (let key in methods) {
-      this._proxyKey[key] = methods
-    }
-  }
-  private _initComputed() {
-    const computed = this.$options.computed
-
-    for (let key in computed) {
-      if (this._proxyKey[key]) {
-        warn('computed的key不合法')
-      } else {
-        this._computedWatched[key] = new Watch(this._proxyThis, computed[key], noop, {
-          computed: true
-        })
-        this._proxyKey[key] = computed
-      }
-    }
-  }
-  private _initWatch() {
-    const watch = this.$options.watch
-
-    for (let key in watch) {
-      new Watch(this, key, watch[key], { user: true })
-    }
   }
   private _initHook() {
     for (let h of hooks) {

@@ -56,6 +56,7 @@ function enter(vnode: VNode, toggleDisplay?: () => void) {
     el._leaveCb!()
   }
 
+  vnode.data.transition = vnode.data.transition || {}
   const data = resolveTransition(vnode.data.transition.name)
   if (isUndef(data)) return
 

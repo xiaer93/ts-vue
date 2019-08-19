@@ -6,12 +6,12 @@ let v = new Vue({
   el: '#app',
   data () {
     return  {
-        news: [1,2]
+        news: [1]
     }
   },
   computed: {
     newsStr() {
-      console.log(this.news, this.news.length)
+      console.log('cc:', this.news.length)
       return this.news.length
     }
   },
@@ -22,8 +22,9 @@ let v = new Vue({
   },
   render (h) {
     console.log('render: ', ++runCount)
-    // return h('h1', this.newsStr)
-    return h('h1', this.news.length)
+    debugger
+    return h('h1', this.newsStr)
+    // return h('h1', this.news.length)
   }
 })
 

@@ -27,7 +27,7 @@ export interface VNodeDataRender {
   style?: any
   class?: any
   attrs?: any
-  props?: any
+  props?: VNodeProps
   domProps?: any
 
   on?: onType
@@ -62,6 +62,11 @@ export interface VNodeMethod {
 export interface VNodeComputed {
   [key: string]: Function
 }
+
+export interface VNodeProps {
+  [key: string]: any
+}
+
 export interface VNodeWatch {
   [key: string]: (oldVal?: any, val?: any) => void
 }

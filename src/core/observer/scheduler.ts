@@ -3,7 +3,6 @@ import nextTick from '../../helper/next-tick'
 import { isDef, isTruth } from '../../helper/utils'
 import { Vue } from '../../type'
 import { callhook } from '../../helper/hook'
-import { debug } from 'util'
 
 let flush: boolean = false
 let wait: boolean = false
