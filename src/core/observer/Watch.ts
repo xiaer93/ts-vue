@@ -1,23 +1,22 @@
-import Dep, { popTarget, pushTarget } from './dep'
+import Dep, { popTarget, pushTarget, ArrayDep } from './dep'
 import { queueWatcher } from './scheduler'
 import { isFunction, noop } from '../../helper/utils'
-import { WatchOptions, Vue } from '../../type'
+import { WatchOptions, Vue, noopFn } from '../../type'
 
 let watchId = 0
 
 class Watch {
-  private deps: Array<Dep>
-  private cb: () => void
+  private deps: ArrayDep
+  private cb: noopFn
   private getter: any
-  private dep?: Dep
   private options: WatchOptions
 
   public vm: any
   public id: number
   public value: any
-  public before?: () => void
+  public before?: noopFn
 
-  constructor(vm: Vue, key: any, cb: () => void, options?: WatchOptions) {
+  constructor(vm: Vue, key: any, cb: noopFn, options?: WatchOptions) {
     this.vm = vm
     this.deps = []
     this.cb = cb
@@ -26,12 +25,7 @@ class Watch {
     this.options = options || {}
     this.before = this.options.before
 
-    if (this.options.computed) {
-      this.dep = new Dep()
-      this.value = undefined
-    } else {
-      this.value = this.get()
-    }
+    this.value = this.options.lazy ? undefined : this.get()
   }
   private get(): any {
     let vm = this.vm
@@ -49,24 +43,21 @@ class Watch {
     queueWatcher(this)
   }
   depend() {
-    if (this.dep && Dep.Target) {
-      this.dep.depend()
+    for (let dep of this.deps) {
+      dep.depend()
     }
   }
   run() {
-    if (this.options.computed) {
-      this.getAndInvoke(() => {
-        this.dep!.notify()
-      })
-    } else {
-      this.getAndInvoke(this.cb)
-    }
+    this.getAndInvoke(this.cb)
   }
   evaluate() {
     this.value = this.get()
     return this.value
   }
   teardown() {
+    for (let dep of this.deps) {
+      dep.removeWatch(this)
+    }
     this.deps.length = 0
   }
 
@@ -90,5 +81,7 @@ function parsePath(key: string): any {
     return vm[key]
   }
 }
+
+export type ArrayWatch = Array<Watch>
 
 export default Watch

@@ -1,6 +1,6 @@
-import Watch from './watch'
+import Watch, { ArrayWatch } from './watch'
 
-let targetPool: Array<Watch> = []
+let targetPool: ArrayWatch = []
 
 /**
  * 收集依赖
@@ -8,13 +8,19 @@ let targetPool: Array<Watch> = []
 class Dep {
   static Target: Watch | undefined
 
-  private watches: Array<Watch>
+  private watches: ArrayWatch
 
   constructor() {
     this.watches = []
   }
   addWatch(watch: Watch) {
     !this.watches.includes(watch) && this.watches.push(watch)
+  }
+  removeWatch(watch: Watch) {
+    let index = this.watches.indexOf(watch)
+    if (index !== -1) {
+      this.watches.splice(index, 1)
+    }
   }
   depend() {
     Dep.Target && Dep.Target.addDep(this)
@@ -26,13 +32,14 @@ class Dep {
   }
 }
 
-export function pushTarget(watch: Watch) {
+export function pushTarget(watch: Watch): void {
   Dep.Target && targetPool.push(Dep.Target)
   Dep.Target = watch
 }
 
-export function popTarget() {
+export function popTarget(): void {
   Dep.Target = targetPool.pop()
 }
 
+export type ArrayDep = Array<Dep>
 export default Dep

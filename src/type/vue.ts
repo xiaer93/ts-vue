@@ -17,17 +17,9 @@ export interface ComputedWatch {
   [key: string]: Watch
 }
 
-export interface ProxyKey {
-  [key: string]: VNodeData | VNodeMethod | VNodeComputed
-}
-
 export interface Vue {
-  _events: any
-
   _computedWatched: ComputedWatch
-
   _watcher?: Watch
-  _init: (thisProxy: any) => void
 
   $options: VueOptions
   $status: VueStatus
@@ -44,6 +36,8 @@ export interface Vue {
   $off: (event?: string | Array<string>, fn?: Function) => Vue
   $once: (event?: string | Array<string>, fn?: Function) => Vue
   $emit: (event: string, ...args: any[]) => Vue
+
+  $watch: (key: string, fn: (newValue?: any, oldValue?: any) => void) => void
 
   _t: RenderSlot
 
@@ -63,11 +57,11 @@ export interface VueOptions {
 
   components?: Array<Vue>
 
-  data?: () => any
+  data?: VueData
   props?: any
-  methods?: VNodeMethod
-  computed?: VNodeComputed
-  watch?: VNodeWatch
+  methods?: VueMethod
+  computed?: VueComputed
+  watch?: VueWatch
   beforeCreate?: VueHookFunction
   created?: VueHookFunction
   beforeMount?: VueHookFunction
@@ -79,6 +73,19 @@ export interface VueOptions {
 
   [key: string]: any
 }
+
+export interface VueData {
+  (): Object
+  [key: string]: Object
+}
+
+export interface VueMethod extends VNodeMethod {}
+export interface VueWatch extends VNodeWatch {}
+export interface VueComputed {
+  [key: string]: VueComputedMethod
+}
+
+export type VueComputedMethod = StrategyMethod | Function
 
 export interface VueStatus {
   isBeingDestroyed: boolean
@@ -97,4 +104,12 @@ export interface VueSlots {
 // render方法
 export interface RenderSlot {
   (name: string, fallback?: Array<VNode>, props?: any, bindObject?: any): Array<VNode> | undefined
+}
+
+export interface Strategy {
+  [key: string]: StrategyMethod | null
+}
+export interface StrategyMethod {
+  get: (target: any, key: string) => any
+  set: (target: any, key: string, val: any) => any
 }

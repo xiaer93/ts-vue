@@ -2,7 +2,6 @@ import {
   Vue,
   VueOptions,
   VNode,
-  ProxyKey,
   ComputedWatch,
   VueHookMethod,
   VueStatus,
@@ -11,7 +10,6 @@ import {
   VueSlots
 } from '../type/index'
 import { createNodeAt, makeCreateElement } from './vnode'
-import { observe, defineObject, observeComputed } from './observer'
 import patch from './web/index'
 import webMethods from './web/dom'
 import Watch from './observer/watch'
@@ -23,6 +21,7 @@ import { updateComponentListeners } from './component/events'
 import { resolveSlot } from './slot'
 import { createProxy, proxyForVm } from './observer/cProxy'
 import { initData, initProps, initMethods, initComputed, initWatch } from './init'
+import { defineObject } from './observer'
 
 const hooks: Array<VueHookMethod> = [
   'beforeCreate',
@@ -61,7 +60,6 @@ class VueReal implements Vue {
   public $scopedSlots?: any
 
   constructor(options: VueOptions) {
-    console.log('oooooooo:', options)
     this._userRender = options.render
     this.$refs = {}
     this.$options = options
@@ -165,6 +163,14 @@ class VueReal implements Vue {
 
     return vm
   }
+  public $once(): Vue {}
+
+  // 自定义监听属性变化
+  public $watch(key: string, fn: (newValue?: any, oldValue?: any) => void) {
+    let watcher = new Watch(this, key, fn, { user: true })
+
+    return watcher
+  }
 
   public _t(
     name: string,
@@ -196,7 +202,7 @@ class VueReal implements Vue {
 
     this._initState()
 
-    if (!options.isComponent) {
+    if (!options.isComponent && options.el) {
       this.$mount(options.el)
     }
   }

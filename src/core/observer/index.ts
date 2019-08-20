@@ -1,24 +1,22 @@
 import Dep from './dep'
 import {
   isPrimitive,
-  isFalse,
-  always,
-  hasOwn,
   isDef,
   isArray,
   isFunction,
   noop,
   isObject,
-  isPlainObject
+  isPlainObject,
+  isTruth
 } from '../../helper/utils'
-import { VueClass, Vue, VNodeComputed } from '../../type'
+import { VueClass, Vue, VNodeComputed, VueComputed, VueComputedMethod } from '../../type'
 import { createProxy, isProxy, defineProxyObject, defineProxyArray } from './cProxy'
 import Watch from './watch'
 
 // observe创建响应式对象
 // proxy对象，所有的操作都会被拦截
 // 对数组 [].push(1)，会触发2次set，key为0， length
-export function observe(obj: any) {
+export function observe(obj: any): Object {
   // 字面量类型或已经为响应式类型则直接返回
   if (isPrimitive(obj) || isProxy(obj)) {
     return obj
@@ -30,7 +28,7 @@ export function observe(obj: any) {
     defineArray(proxyObj)
   } else {
     for (let key in proxyObj) {
-      defineObject(proxyObj, key, undefined, undefined, false)
+      defineObject(proxyObj, key)
     }
   }
 
@@ -40,8 +38,8 @@ export function observe(obj: any) {
 /**
  * 为computed创建响应式对象
  */
-export function observeComputed(obj: VNodeComputed, _computedWatched: any, proxyThis: any) {
-  if (!isPlainObject(obj)) return
+export function observeComputed(obj: VueComputed, _computedWatched: any, proxyThis: any): Object {
+  if (!isPlainObject(obj) || isProxy(obj)) return obj
 
   let proxyObj = createProxy(obj)
 
@@ -58,29 +56,28 @@ export function defineObject(
   val?: any,
   customSetter?: Function,
   shallow?: boolean
-) {
-  if (!isProxy(obj)) {
-    return
-  }
+): void {
+  if (!isProxy(obj)) return
 
   let dep: Dep = new Dep()
 
   val = isDef(val) ? val : obj[key]
-  val = shallow ? val : observe(val)
+  val = isTruth(shallow) ? val : observe(val)
 
   defineProxyObject(obj, key, {
     get(target: any, key: string) {
       Dep.Target && dep.depend()
-      return val
+
+      return Reflect.get(target, key) || val
     },
     set(target: any, key: string, newVal) {
       if (val === newVal || newVal === val.__originObj) return false
 
       if (customSetter) {
-        return customSetter()
+        customSetter(val, newVal)
       }
 
-      newVal = shallow ? newVal : observe(newVal)
+      newVal = isTruth(shallow) ? newVal : observe(newVal)
       val = newVal
       let status = Reflect.set(target, key, val)
       dep.notify()
@@ -89,10 +86,8 @@ export function defineObject(
   })
 }
 
-function defineArray(obj: any) {
-  if (!isProxy(obj)) {
-    return
-  }
+function defineArray(obj: any): void {
+  if (!isProxy(obj)) return
 
   let dep: Dep = new Dep()
 
@@ -114,10 +109,16 @@ function defineArray(obj: any) {
   defineProxyArray(obj, handler)
 }
 
-function defineComputed(obj: any, key: string, userDef: any, watcher: any, proxyThis: any) {
-  if (!isProxy(obj)) {
-    return
-  }
+function defineComputed(
+  obj: any,
+  key: string,
+  userDef: VueComputedMethod,
+  watcher: any,
+  proxyThis: any
+): void {
+  if (!isProxy(obj)) return
+
+  let dep: Dep = new Dep()
 
   const handler: any = {}
   if (isFunction(userDef)) {
@@ -130,16 +131,18 @@ function defineComputed(obj: any, key: string, userDef: any, watcher: any, proxy
 
   defineProxyObject(obj, key, {
     get(target, key) {
-      return handler.get()
+      Dep.Target && dep.depend()
+      return handler.get.call(proxyThis)
     },
     set(target, key, newVal) {
       handler.set.call(proxyThis, newVal)
+      dep.notify()
       return true
     }
   })
 }
 
-function createComputedGetter(watcher: Watch) {
+function createComputedGetter(watcher: Watch): Function {
   return function computedGetter() {
     if (watcher) {
       // 计算值

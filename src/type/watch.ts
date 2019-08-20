@@ -1,5 +1,7 @@
 export interface WatchOptions {
-  computed?: boolean
+  deep?: boolean
+  sync?: boolean
+  lazy?: boolean
   user?: boolean
   before?: () => void
 }

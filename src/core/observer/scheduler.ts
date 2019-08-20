@@ -4,13 +4,15 @@ import { isDef, isTruth } from '../../helper/utils'
 import { Vue } from '../../type'
 import { callhook } from '../../helper/hook'
 
+type ArrayWatch = Array<Watch>
+
 let flush: boolean = false
 let wait: boolean = false
 let hasAddQueue: any = {}
 
-let queue: Array<Watch> = []
+let queue: ArrayWatch = []
 
-function flushQueue() {
+function flushQueue(): void {
   flush = true
 
   queue.sort(function(a, b) {
@@ -29,23 +31,20 @@ function flushQueue() {
     console.log(e)
   }
 
-  console.log(222222222222222)
-
   const updateQueue = queue.slice()
 
   resetQueue()
   callUpdateHooks(updateQueue)
 }
 
-function resetQueue() {
+function resetQueue(): void {
   flush = wait = false
   queue.length = 0
   hasAddQueue = {}
 }
 
-export function queueWatcher(watch: Watch) {
+export function queueWatcher(watch: Watch): void {
   if (!isTruth(hasAddQueue[watch.id])) {
-    //
     hasAddQueue[watch.id] = true
     if (!flush) {
       queue.push(watch)
@@ -63,7 +62,7 @@ export function queueWatcher(watch: Watch) {
   }
 }
 
-function callUpdateHooks(queue: Array<Watch>) {
+function callUpdateHooks(queue: ArrayWatch): void {
   for (let i = queue.length - 1; i >= 0; --i) {
     const watcher = queue[i]
     const vm: Vue = watcher.vm

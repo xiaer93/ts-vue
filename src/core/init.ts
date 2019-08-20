@@ -1,5 +1,5 @@
 import { Vue, VNodeData, VNodeProps, VNodeMethod } from '../type/index'
-import { isFunction, isTruth, isPlainObject } from '../helper/utils'
+import { isFunction, isTruth, isPlainObject, noop } from '../helper/utils'
 import { observe, observeComputed } from './observer'
 import { warn } from '../helper/warn'
 import { proxyForVm } from './observer/cProxy'
@@ -75,7 +75,7 @@ export function initComputed(vm: Vue) {
     }
 
     vm._computedWatched[key] = new Watch(vm._proxyThis, computed[key], noop, {
-      computed: true
+      lazy: true
     })
   }
 

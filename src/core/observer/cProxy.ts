@@ -1,13 +1,4 @@
-import { hasOwn } from '../../helper/utils'
-import Vue from '..'
-
-export interface Strategy {
-  [key: string]: StrategyMethod | null
-}
-export interface StrategyMethod {
-  get: (target: any, key: string) => any
-  set: (target: any, key: string, val: any) => any
-}
+import { Vue, StrategyMethod, Strategy } from '../../type/index'
 
 const proxyFlag = Symbol('[object Proxy]')
 
@@ -24,14 +15,15 @@ const defaultStrategy = {
  * 创建响应式对象
  */
 export function createProxy(obj: any) {
-  let __privateObj = Object.create(null)
-  let __strategys: Strategy = { default: defaultStrategy }
-  let __originObj = obj
-  let __proxyFlag = proxyFlag
+  // 如果对象不可拓展，则直接返回原始对象。（preventExtensions、seal、freeze处理后的对象，都是不可拓展的[添加新的属性]）
+  if (!Object.isExtensible(obj)) return obj
 
-  __privateObj.__strategys = __strategys
-  __privateObj.__originObj = __originObj
-  __privateObj.__proxyFlag = __proxyFlag
+  let __privateObj = Object.create(null)
+  __privateObj.__strategys = { default: defaultStrategy }
+  __privateObj.__originObj = obj
+  __privateObj.__proxyFlag = proxyFlag
+
+  let __strategys: Strategy = __privateObj.__strategys
 
   let proxy: any = new Proxy(obj, {
     get(target, key: string) {
@@ -62,6 +54,9 @@ export function createProxy(obj: any) {
   return proxy
 }
 
+/**
+ * 判断是否为响应式对象
+ */
 export function isProxy(val: any): boolean {
   return val.__proxyFlag === proxyFlag
 }
@@ -69,7 +64,7 @@ export function isProxy(val: any): boolean {
 /**
  * 给响应式对象定义响应式属性
  */
-export function defineProxyObject(obj: any, key: string, handler: StrategyMethod) {
+export function defineProxyObject(obj: any, key: string, handler: StrategyMethod): void {
   if (!isProxy(obj)) return
 
   let __strategys: Strategy = obj.__strategys
