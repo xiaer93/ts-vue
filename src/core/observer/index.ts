@@ -71,7 +71,7 @@ export function defineObject(
       return Reflect.get(target, key) || val
     },
     set(target: any, key: string, newVal) {
-      if (val === newVal || newVal === val.__originObj) return false
+      if (val === newVal || newVal === val.__originObj) return true
 
       if (customSetter) {
         customSetter(val, newVal)

@@ -6,38 +6,40 @@ let v = new Vue({
   el: '#app',
   data () {
     return  {
-        news: [1]
+        news: [1],
+        firstName: 'cheng',
+        lastName: 'jw'
     }
   },
   computed: {
     newsStr() {
       console.log('cc:', this.news.length)
-      return this.news.length
-    }
-  },
-  watch: {
-    newsStr (newVal) {
-      console.log('watchwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww', newVal)
+      return this.news.length.toString()
+    },
+    fullName:　{
+      get() {
+        return this.firstName + ' ' + this.lastName
+      },
+      set(newValue) {
+        var names = newValue.split(' ')
+        this.firstName = names[0]
+        this.lastName = names[1]
+      }
     }
   },
   render (h) {
     console.log('render: ', ++runCount)
-    debugger
-    return h('h1', this.newsStr)
-    // return h('h1', this.news.length)
+    return h('h1', this.newsStr + this.fullName)
   }
 })
 
 window.v = v
 
 setTimeout(() => {
-  // fixme: v.news = [1,2,3]
-  // fixme: v.news.push(3)
-  // 为什么没有驱动更新？,push3触发了watch，newsStr变化触发了watch。在执行watch中触发了watch，因此需要将watch添加进入队列
-    // v.news.push(3)
-    v.news = [1,2,3]
+    // v.news = [1,2,3]
+    v.fullName = 'cheng ly'
 }, 1000)
 
 setTimeout(() => {
-  v.news.push(4)
+  // v.news.push(4)
 }, 5000)

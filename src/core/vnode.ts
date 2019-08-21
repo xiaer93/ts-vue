@@ -84,7 +84,6 @@ function createVElement(context: Vue, a: string, b?: any, c?: any): VNode {
   } else {
     children = isArray(b) ? flatten(b) : [isPrimitive(b) ? createTextVnode(b) : b]
   }
-  console.log([...children])
 
   if (isArray(children)) {
     for (let i = 0; i < children.length; ++i) {

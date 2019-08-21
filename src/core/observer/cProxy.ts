@@ -7,7 +7,7 @@ const defaultStrategy = {
     return Reflect.get(target, key)
   },
   set(target: any, key: string, newVal: any) {
-    Reflect.set(target, key, newVal)
+    return Reflect.set(target, key, newVal)
   }
 }
 

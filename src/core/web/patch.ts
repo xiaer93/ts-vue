@@ -240,7 +240,7 @@ function createElm(vnode: VNode): Node {
     vnode.elm = webMethods.createElement(vnode.tag!)
 
     // 先执行子元素hook
-    createChildren(vnode, vnode.children)
+    vnode.children && createChildren(vnode, vnode.children)
     //hook-create
     invokeCreateHook(vnode)
   }

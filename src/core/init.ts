@@ -74,7 +74,10 @@ export function initComputed(vm: Vue) {
       break
     }
 
-    vm._computedWatched[key] = new Watch(vm._proxyThis, computed[key], noop, {
+    let userDef = computed[key]
+    let getter = isFunction(userDef) ? userDef : userDef.get
+
+    vm._computedWatched[key] = new Watch(vm._proxyThis, getter, noop, {
       lazy: true
     })
   }
@@ -93,6 +96,6 @@ export function initWatch(vm: Vue) {
   const watch = vm.$options.watch
 
   for (let key in watch) {
-    new Watch(vm, key, watch[key], { user: true })
+    new Watch(vm._proxyThis, key, watch[key], { user: true })
   }
 }

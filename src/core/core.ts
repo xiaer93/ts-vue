@@ -13,7 +13,7 @@ import { createNodeAt, makeCreateElement } from './vnode'
 import patch from './web/index'
 import webMethods from './web/dom'
 import Watch from './observer/watch'
-import { noop, isTruth, isFunction, isArray, isNode, isUndef, curry } from '../helper/utils'
+import { noop, isTruth, isFunction, isArray, isNode, isUndef } from '../helper/utils'
 import { warn, invokeWithErrorHandling } from '../helper/warn'
 import { callhook } from '../helper/hook'
 import nextTick from '../helper/next-tick'
@@ -21,7 +21,6 @@ import { updateComponentListeners } from './component/events'
 import { resolveSlot } from './slot'
 import { createProxy, proxyForVm } from './observer/cProxy'
 import { initData, initProps, initMethods, initComputed, initWatch } from './init'
-import { defineObject } from './observer'
 
 const hooks: Array<VueHookMethod> = [
   'beforeCreate',
