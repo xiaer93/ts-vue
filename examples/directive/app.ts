@@ -2,6 +2,11 @@ import Vue, { VNode } from "../../src";
 
 let runCount = 0
 
+
+// 实现v-model：：：https://cn.vuejs.org/v2/guide/render-function.html#v-model
+// Vue.component('input-num', {
+// })
+
 let v = new Vue({
     el: '#app',
     data () {

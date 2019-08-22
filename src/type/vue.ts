@@ -58,7 +58,7 @@ export interface VueOptions {
   components?: Array<Vue>
 
   data?: VueData
-  props?: any
+  props?: VueProps
   methods?: VueMethod
   computed?: VueComputed
   watch?: VueWatch
@@ -77,6 +77,10 @@ export interface VueOptions {
 export interface VueData {
   (): Object
   [key: string]: Object
+}
+
+export interface VueProps {
+  [key: string]: any
 }
 
 export interface VueMethod extends VNodeMethod {}

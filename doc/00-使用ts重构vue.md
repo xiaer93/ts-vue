@@ -38,7 +38,7 @@
 
 1. 虚拟dom
 2. Proxy和Reflect使用
-3. 事件循环---nextTick等
+3. 事件循环介绍---nextTick等
 
 
 class P {

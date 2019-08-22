@@ -10,7 +10,6 @@ Vue.component('button-counter', {
   },
 
   render (h) {
-    console.log('renderrenderrenderrenderrenderrenderrenderrender')
     return h('button', {
       on: {
         click() {
