@@ -128,3 +128,22 @@ export function always(val: any): Function {
 export function hasOwn(obj: Object, key: string | number | symbol): boolean {
   return !isNull(obj) && obj.hasOwnProperty(key)
 }
+
+let hyphenateRE = /\B([A-Z])/g
+export function hyphenate(val: string): string {
+  return val.replace(hyphenateRE, '-$1').toLowerCase()
+}
+
+let camelizeRE = /-(\w)/g
+export function camelize(val: string): string {
+  return val.replace(camelizeRE, function(_, c: string) {
+    return c ? c.toUpperCase() : ''
+  })
+}
+
+export function extend(to: Object, from: Object): Object {
+  for (let key in from) {
+    ;(to as any)[key] = (from as any)[key]
+  }
+  return to
+}

@@ -20,7 +20,7 @@ import nextTick from '../helper/next-tick'
 import { updateComponentListeners } from './component/events'
 import { resolveSlot } from './slot'
 import { createProxy, proxyForVm } from './observer/cProxy'
-import { initData, initProps, initMethods, initComputed, initWatch } from './init'
+import { initData, initProps, initMethods, initComputed, initWatch } from './init/index'
 
 const hooks: Array<VueHookMethod> = [
   'beforeCreate',

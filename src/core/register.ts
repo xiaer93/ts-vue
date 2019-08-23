@@ -1,5 +1,6 @@
 import { VueOptions, VNodeDirectiveMethod, VueHookMethod } from '../type'
 import { isFunction } from '../helper/utils'
+import Vue from '..'
 
 type Components = {
   [key: string]: VueOptions
@@ -35,7 +36,7 @@ export function registerMixin(mixin: any) {
 }
 
 // 注册插件
-export function registerPlugins(plugin: Function | Object, ...args: Array<any>) {
+export function registerPlugins(plugin: Function | Object, ...args: Array<any>): Vue {
   if (installedPlugins.includes(plugin)) {
     return this
   }

@@ -1,14 +1,15 @@
-type DataType = Number | String | Boolean | Object | Array<any>
+type DataType = Number | String | Boolean | Object | any
 
-// export type ComponentPropsType = Array<DataType> | DataType | ComponentPropsObj
-export type ComponentPropsType = ComponentPropsObj
-
-interface ComponentPropsObj {
+interface ComponentPropsValueObject {
   type: Array<DataType> | DataType
   default?: any
   validator?: (value: any) => boolean
 }
 
+export interface ComponentPropsObject {
+  [key: string]: Array<DataType> | DataType | ComponentPropsValueObject
+}
+
 export interface ComponentProps {
-  [key: string]: ComponentPropsType
+  [key: string]: ComponentPropsObject | Array<any>
 }

@@ -45,10 +45,13 @@ function extend(Vue: VueClass) {
   // 创建销毁对象
   let proxyVue = new Proxy(Vue, {
     construct(target, argumentsList, newTarget) {
-      let options = merge(argumentsList[0], {
-        components: GlobalComponents,
-        directives: GlobalDirectives
-      })
+      let options = merge(
+        {
+          components: GlobalComponents,
+          directives: GlobalDirectives
+        },
+        argumentsList[0]
+      )
       options = merge(options, GlobalMixins.value)
       // 绑定Vue，方便或许获取静态方法extend
       options._base = proxyVue
