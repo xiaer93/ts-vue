@@ -68,7 +68,7 @@ export function defineObject(
     get(target: any, key: string) {
       Dep.Target && dep.depend()
 
-      return Reflect.get(target, key) || val
+      return val
     },
     set(target: any, key: string, newVal) {
       if (val === newVal || newVal === val.__originObj) return true
@@ -88,7 +88,6 @@ export function defineObject(
 
 function defineArray(obj: any): void {
   if (!isProxy(obj)) return
-
   let dep: Dep = new Dep()
 
   let handler = {

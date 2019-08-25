@@ -4,6 +4,7 @@ import { callhook } from '../../helper/hook'
 import { updateComponentListeners } from './events'
 import { isTrue } from '../../helper/utils'
 import { resolveSlot } from '../slot'
+import { initProps } from '../init'
 
 const componentVNodeHooks = {
   init(vnode: VNode) {
@@ -54,6 +55,7 @@ export function createComponent(
   const Ctor: VueClass = baseCtor.extend(Ctor)
   data = data || {}
 
+  // data.on为自定义事件，nativeOn为原生事件
   const listeners = data.on
   data.on = data.nativeOn
 
@@ -123,7 +125,8 @@ function updateChildComponent(
   vm.$options._renderChildren = renderChildren
   updateComponentListeners(vm, listeners, oldListeners)
 
-  vm._initProps()
+  // 更新component-props
+  initProps(vm)
 
   // 更新插槽---每个vnode都有context
   vm.$slots = resolveSlot(renderChildren, parentVnode.context)

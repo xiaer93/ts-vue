@@ -34,10 +34,10 @@ export function createFnInvoker(fns: Function | Array<Function>) {
     if (isArray(fns)) {
       const cloned = (fns as Array<Function>).splice(0)
       for (let fn of cloned) {
-        invokeWithErrorHandling(fn, args, null)
+        invokeWithErrorHandling(fn, args)
       }
     } else {
-      invokeWithErrorHandling(fns, args, null)
+      invokeWithErrorHandling(fns, args)
     }
   }
 

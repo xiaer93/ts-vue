@@ -30,7 +30,7 @@ export function createSubVue(options: VueOptions) {
     static extend = extend
 
     constructor(opts: VueOptions) {
-      opts = merge(options, opts)
+      opts = merge(opts, options)
       super(opts)
     }
   }
@@ -52,7 +52,7 @@ function extend(Vue: VueClass) {
         },
         argumentsList[0]
       )
-      options = merge(options, GlobalMixins.value)
+      // options = merge(GlobalMixins.value, options)
       // 绑定Vue，方便或许获取静态方法extend
       options._base = proxyVue
 
@@ -85,4 +85,4 @@ for (let key in DefaultComponents) {
   Vue.component(key, DefaultComponents[key])
 }
 
-export default Vue
+export default extend(Vue)

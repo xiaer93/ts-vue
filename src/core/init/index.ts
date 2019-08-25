@@ -56,6 +56,7 @@ export function initData(vm: Vue) {
   const existedKey = [...methodsKey, ...propsKey]
 
   vm.$options.data = proxyData = observe(data)
+  debugger
 
   for (let key in proxyData) {
     if (existedKey.includes(key)) {

@@ -35,7 +35,6 @@ export class VNodeRel implements VNode {
 
   parent?: VNode
   key?: string | number
-  isComment?: boolean
   constructor(
     tag?: string,
     data?: VNodeData,
@@ -99,6 +98,7 @@ function createVElement(context: Vue, a: string, b?: any, c?: any): VNode {
     console.log('Ctor', Ctor, data)
     return createComponent(Ctor, data, context, children, a)
   } else {
+    return new VNodeRel(a, data, children, undefined, undefined, context)
   }
 }
 

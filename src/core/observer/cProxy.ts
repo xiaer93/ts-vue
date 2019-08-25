@@ -1,4 +1,6 @@
 import { Vue, StrategyMethod, Strategy } from '../../type/index'
+import { isString } from 'util'
+import { hasOwn } from '../../helper/utils'
 
 const proxyFlag = Symbol('[object Proxy]')
 
@@ -16,19 +18,19 @@ const defaultStrategy = {
  */
 export function createProxy(obj: any) {
   // 如果对象不可拓展，则直接返回原始对象。（preventExtensions、seal、freeze处理后的对象，都是不可拓展的[添加新的属性]）
-  if (!Object.isExtensible(obj)) return obj
+  if (!Object.isExtensible(obj) || isProxy(obj)) return obj
 
-  let __privateObj = Object.create(null)
-  __privateObj.__strategys = { default: defaultStrategy }
-  __privateObj.__originObj = obj
-  __privateObj.__proxyFlag = proxyFlag
+  let privateObj: any = {}
+  privateObj.__strategys = { default: defaultStrategy }
+  privateObj.__originObj = obj
+  privateObj.__proxyFlag = proxyFlag
 
-  let __strategys: Strategy = __privateObj.__strategys
+  let __strategys: Strategy = privateObj.__strategys
 
   let proxy: any = new Proxy(obj, {
     get(target, key: string) {
       if (isPrivateKey(key)) {
-        return __privateObj[key]
+        return privateObj[key]
       }
 
       const strategy: StrategyMethod = (__strategys[key] ||
@@ -37,19 +39,25 @@ export function createProxy(obj: any) {
     },
     set(target, key: string, val: any) {
       if (isPrivateKey(key)) {
-        __privateObj[key] = val
+        privateObj[key] = val
         return
       }
+      // if(key == 1) debugger
+      console.log(key)
 
       const strategy: StrategyMethod = (__strategys[key] ||
         __strategys['default']) as StrategyMethod
       return strategy.set(target, key, val)
     },
     ownKeys(target) {
-      const privateKeys = Object.keys(__privateObj)
+      const privateKeys = Object.keys(privateObj)
       return Object.keys(target).filter(v => !privateKeys.includes(v))
     }
   })
+
+  function isPrivateKey(key: string) {
+    return hasOwn(privateObj, key)
+  }
 
   return proxy
 }
@@ -76,13 +84,8 @@ export function defineProxyObject(obj: any, key: string, handler: StrategyMethod
  */
 export function defineProxyArray(obj: Array<any>, handler: StrategyMethod) {
   if (!isProxy(obj)) return
-
   let __strategys: Strategy = (obj as any).__strategys
   __strategys['default'] = handler
-}
-
-function isPrivateKey(key: string) {
-  return key.substr(0, 2) === '__'
 }
 
 export function proxyForVm(vm: Vue, source: any, key: string) {

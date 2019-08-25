@@ -271,6 +271,7 @@ class VueReal implements Vue {
     }
   }
   private _initEvent() {
+    // fixme: 挂载父组件的事件函数。
     this._events = Object.create(null)
     // _parentListeners父组件挂载的事件
     const listeners = this.$options._parentListeners

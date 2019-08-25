@@ -80,7 +80,7 @@ function assertProp(
   absent: boolean
 ): any {
   if ((prop as any).required && absent) {
-    return warn(`Missing required prop: "${name}" ${vm}`)
+    return warn(`Missing required prop: "${name}"`)
   }
 
   if (value === null && !(prop as any).required) {

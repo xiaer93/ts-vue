@@ -1,5 +1,13 @@
 import { VNode, Module } from '../../type'
-import { isSameVnode, isDef, isUndef, isPrimitive, isArray, isTruth } from '../../helper/utils'
+import {
+  isSameVnode,
+  isDef,
+  isUndef,
+  isPrimitive,
+  isArray,
+  isTruth,
+  isVNode
+} from '../../helper/utils'
 import webMethods from './dom'
 import { createEmptyVnode } from '../vnode'
 
@@ -91,7 +99,6 @@ function patchNode(oldVnode: VNode, vnode: VNode) {
   if (oldVnode === vnode) return
 
   invokeVnodeHooks(oldVnode, vnode, 'prepatch')
-  // invokeHooks(oldVnode, vnode, 'update')
   invokeCbHooks('update')(oldVnode, vnode)
 
   if (oldCh) {
@@ -228,6 +235,8 @@ function insertChildren(
  * 生成真实节点: div、text、comment
  */
 function createElm(vnode: VNode): Node {
+  if (!isVNode(vnode)) return null
+
   if (createComponent(vnode)) {
     return vnode.elm
   }
@@ -250,7 +259,7 @@ function createElm(vnode: VNode): Node {
 
 function createChildren(vnode: VNode, children: Array<VNode>) {
   for (let ch of children) {
-    if (ch !== null) {
+    if (isVNode(ch)) {
       webMethods.append(vnode.elm, createElm(ch))
     }
   }

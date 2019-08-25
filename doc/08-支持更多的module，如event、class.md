@@ -1,5 +1,11 @@
-import Vue from "../../src";
+# 如何给dom绑定事件？
 
+如何给dom挂载事件，？
+
+## 需求
+
+注册组件button-count，当点击之后，自己更新状态，同时触发自定义事件customClick，父组件监听到变化后，向news中添加一条记录。
+```
 Vue.component('button-count', {
     data () {
         return {
@@ -45,5 +51,11 @@ let v = new Vue({
     ])
   }
 })
+```
 
-window.v = v
+## 事件的分类
+
+在vue中，通过v-bind绑定的事件主要2类，一类是原生事件，一类是自定义事件。$on, $emit等
+
+## 总结
+

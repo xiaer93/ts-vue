@@ -10,11 +10,15 @@ Vue.component('button-counter', {
   },
 
   render (h) {
+    const self = this
     return h('button', {
       on: {
         click() {
           console.log('click')
+          // fixme: 在vue中，此处同样指向window（根据定义函数的作用域确定）
           this.count += 1
+          self.count += 1
+          
         }
       }
     }, `you click ${this.count}`)
@@ -52,7 +56,7 @@ let v = new Vue({
       h('button-counter'),
       h('anchored-heading', {
         props: {
-          level: 3,
+          level: 1,
           title: this.title
         }
       })

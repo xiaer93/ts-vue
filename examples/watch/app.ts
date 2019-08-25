@@ -52,7 +52,6 @@ let v = new Vue({
         h('input', {
           on: {
             input(e) {
-              debugger
               self.question = e.target.value
             }
           },
