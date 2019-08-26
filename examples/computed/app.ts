@@ -8,12 +8,11 @@ let v = new Vue({
     return  {
         news: [1],
         firstName: 'cheng',
-        lastName: 'jw'
+        lastName: 'xiaohong'
     }
   },
   computed: {
     newsStr() {
-      console.log('cc:', this.news.length)
       return this.news.length.toString()
     },
     fullName:　{
@@ -29,17 +28,12 @@ let v = new Vue({
   },
   render (h) {
     console.log('render: ', ++runCount)
-    return h('h1', this.newsStr + this.fullName)
+    return h('h1', this.fullName + '，未读消息：' + this.newsStr)
   }
 })
 
 window.v = v
 
 setTimeout(() => {
-    // v.news = [1,2,3]
-    v.fullName = 'cheng ly'
+    v.fullName = 'cheng xiaoming'
 }, 1000)
-
-setTimeout(() => {
-  // v.news.push(4)
-}, 5000)

@@ -1,169 +1,128 @@
-# TypeScript library starter
+# 使用ts重构Vue
 
-[![styled with prettier](https://img.shields.io/badge/styled_with-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
-[![Greenkeeper badge](https://badges.greenkeeper.io/alexjoverm/typescript-library-starter.svg)](https://greenkeeper.io/)
-[![Travis](https://img.shields.io/travis/alexjoverm/typescript-library-starter.svg)](https://travis-ci.org/alexjoverm/typescript-library-starter)
-[![Coveralls](https://img.shields.io/coveralls/alexjoverm/typescript-library-starter.svg)](https://coveralls.io/github/alexjoverm/typescript-library-starter)
-[![Dev Dependencies](https://david-dm.org/alexjoverm/typescript-library-starter/dev-status.svg)](https://david-dm.org/alexjoverm/typescript-library-starter?type=dev)
-[![Donate](https://img.shields.io/badge/donate-paypal-blue.svg)](https://paypal.me/AJoverMorales)
+## 为什么要重构
 
-A starter project that makes creating a TypeScript library extremely easy.
+本科机械设计制造及其自动化，17年机缘巧合之下自学了大半年跨行来到前端。工作中主要为业务代码，一直希望能够提高编程能力。恰好，公司的业务栈主要以vue为主，作为前端的三大框架之一，理解它的逻辑，对于日常工作肯定有一些帮助。于是就有了使用ts重构vue的冲动。更甚者，我希望自己能够参与到开源社区的建设，努力变得更好。
 
-![](https://i.imgur.com/opUmHp0.png)
 
-### Usage
+## 重构计划
 
-```bash
-git clone https://github.com/alexjoverm/typescript-library-starter.git YOURFOLDERNAME
-cd YOURFOLDERNAME
+使用到的技术栈如下：
 
-# Run npm install and write your library name when asked. That's all!
-npm install
+1. TypeScript
+2. Jest
+3. es6
+4. rollup
+
+使用TypeScript编写，使用Jest做单元测试，使用rollup构建。
+
+vue功能十分复杂，此次重构并不是完全的照（拷）搬（贝），所以我优先挑选主线功能去实现。我希望最佳的开发模式是，以问题（feature）引领，去阅读源码，理解后通过自己的方式去实现。
+
+同时，vue2.x是通过Object.defineProperity实现的响应式，我将不考虑兼容性问题，直接使用Proxy进行开发，在针对数组的监听上，将更加友好高效。
+
+源码很复杂，重构时首先实现最基本的功能即可。接着一步步开发，不断完善。
+如，1、实现组件功能，2.传递props数据，3.实现emit事件，4.实现transition内置组件模块
+
+
+## feature
+
+设想的功能点，首先肯定是可以创建虚拟节点，接着可以将虚拟dom挂载至真实dom。再接着一步一步实现其他的功能。
+
+1. 如何创建虚拟节点？
+2. 如何将虚拟节点映射至真实dom？
+3. 如何监听响应，实现双向数据绑定？
+4. 如何创建组件？
+5. 如何实现异步组件？
+6. 如何实现hook？
+7. 如何实现内置组件？
+8. 如何编写扩展？
+
+## 基础准备篇
+
+1. 虚拟dom
+
+我们知道，js和dom像两座孤岛，中间通过桥梁连接。如何尽量减少dom的操作，对于性能来说显得尤为重要。因此，通过VNode记录节点信息，在js侧进行diff对比，尽量减少dom的操作。具体的diff算法，推荐阅读snabbdom，vue的源码也参考了这个开源库。
+
+```
+export class VNodeRel implements VNode {
+  tag?: string
+  data?: VNodeData
+  children?: Array<VNode>
+  text?: string
+  elm?: Node
+  context?: Vue
+  componentOptions?: VueOptions
+
+  componentInstance?: Vue
+
+  parent?: VNode
+  key?: string | number
+  isComment?: boolean
+  constructor(
+    tag?: string,
+    data?: VNodeData,
+    children?: Array<VNode>,
+    text?: string,
+    elm?: Node,
+    context?: Vue,
+    componentOptions?: VueOptions
+  ) {
+    this.tag = tag
+    this.data = data || ({} as VNodeData)
+    this.children = children
+    this.text = text
+    this.elm = elm
+    this.context = context || bindContenxt
+    this.componentOptions = componentOptions
+  }
+}
 ```
 
-**Start coding!** `package.json` and entry files are already set up for you, so don't worry about linking to your main file, typings, etc. Just keep those files with the same name.
 
-### Features
+1. Proxy和Reflect使用
 
- - Zero-setup. After running `npm install` things will setup for you :wink:
- - **[RollupJS](https://rollupjs.org/)** for multiple optimized bundles following the [standard convention](http://2ality.com/2017/04/setting-up-multi-platform-packages.html) and [Tree-shaking](https://alexjoverm.github.io/2017/03/06/Tree-shaking-with-Webpack-2-TypeScript-and-Babel/)
- - Tests, coverage and interactive watch mode using **[Jest](http://facebook.github.io/jest/)**
- - **[Prettier](https://github.com/prettier/prettier)** and **[TSLint](https://palantir.github.io/tslint/)** for code formatting and consistency
- - **Docs automatic generation and deployment** to `gh-pages`, using **[TypeDoc](http://typedoc.org/)**
- - Automatic types `(*.d.ts)` file generation
- - **[Travis](https://travis-ci.org)** integration and **[Coveralls](https://coveralls.io/)** report
- - (Optional) **Automatic releases and changelog**, using [Semantic release](https://github.com/semantic-release/semantic-release), [Commitizen](https://github.com/commitizen/cz-cli), [Conventional changelog](https://github.com/conventional-changelog/conventional-changelog) and [Husky](https://github.com/typicode/husky) (for the git hooks)
+Object.defineProperty通过直接操作原始对象，在数组对象上有诸多限制。而Proxy可以做到更精细，但是proxy必须操作返回对象。因此，下述我们事先了一个类的代理方式。
 
-### Importing library
+```
+class P {
+  constructor () {
+    this.data = {name: 'xiaoming'}
+    return new Proxy(this, {
+      get (target, key) {
+        return Reflect.get(target.data, key)
+      }
+    })
+  }
+}
+let p = new P()
+console.log(p.name)
 
-You can import the generated bundle to use the whole library generated by this starter:
-
-```javascript
-import myLib from 'mylib'
 ```
 
-Additionally, you can import the transpiled modules from `dist/lib` in case you have a modular library:
+1. 事件循环介绍---nextTick等
 
-```javascript
-import something from 'mylib/dist/lib/something'
-```
+熟悉vue的很清楚，vue的每次更新都是异步更新。同时vue中有一个非常重要的函数$nextTick。异步在vue中非常重要，所以了解明白js事件循环，有助于了解vue的异步更新的原理。
 
-### NPM scripts
 
- - `npm t`: Run test suite
- - `npm start`: Run `npm run build` in watch mode
- - `npm run test:watch`: Run test suite in [interactive watch mode](http://facebook.github.io/jest/docs/cli.html#watch)
- - `npm run test:prod`: Run linting and generate coverage
- - `npm run build`: Generate bundles and typings, create docs
- - `npm run lint`: Lints code
- - `npm run commit`: Commit using conventional commit style ([husky](https://github.com/typicode/husky) will tell you to use it if you haven't :wink:)
+## 总结
 
-### Excluding peerDependencies
+vue源码很复杂，有跨平台代码（web、weex、server），有各种性能监控，还有其他等等复杂功能。看源码时切记不要完美主义，没必要一开始就必须理解所有的代码。而是通过问题主线去阅读，去了解vue实现的原理。在此特别推荐大神写的源码分析：https://ustbhuangyi.github.io/vue-analysis/。推荐配合源码一起阅读。
 
-On library development, one might want to set some peer dependencies, and thus remove those from the final bundle. You can see in [Rollup docs](https://rollupjs.org/#peer-dependencies) how to do that.
+## 补充
 
-Good news: the setup is here for you, you must only include the dependency name in `external` property within `rollup.config.js`. For example, if you want to exclude `lodash`, just write there `external: ['lodash']`.
+ts学习推荐：https://coding.imooc.com/class/chapter/330.html
 
-### Automatic releases
+## 杠精一下
 
-_**Prerequisites**: you need to create/login accounts and add your project to:_
- - [npm](https://www.npmjs.com/)
- - [Travis CI](https://travis-ci.org)
- - [Coveralls](https://coveralls.io)
+1. 为什么使用ts？
 
-_**Prerequisite for Windows**: Semantic-release uses
-**[node-gyp](https://github.com/nodejs/node-gyp)** so you will need to
-install
-[Microsoft's windows-build-tools](https://github.com/felixrieseberg/windows-build-tools)
-using this command:_
+词汇：
+vnode， vue定义的虚拟节点
+patch，虚拟节点转为真实Dom
 
-```bash
-npm install --global --production windows-build-tools
-```
+为什么使用ts？
 
-#### Setup steps
 
-Follow the console instructions to install semantic release and run it (answer NO to "Do you want a `.travis.yml` file with semantic-release setup?").
+## 其他文档
 
-_Note: make sure you've setup `repository.url` in your `package.json` file_
 
-```bash
-npm install -g semantic-release-cli
-semantic-release-cli setup
-# IMPORTANT!! Answer NO to "Do you want a `.travis.yml` file with semantic-release setup?" question. It is already prepared for you :P
-```
-
-From now on, you'll need to use `npm run commit`, which is a convenient way to create conventional commits.
-
-Automatic releases are possible thanks to [semantic release](https://github.com/semantic-release/semantic-release), which publishes your code automatically on [github](https://github.com/) and [npm](https://www.npmjs.com/), plus generates automatically a changelog. This setup is highly influenced by [Kent C. Dodds course on egghead.io](https://egghead.io/courses/how-to-write-an-open-source-javascript-library)
-
-### Git Hooks
-
-There is already set a `precommit` hook for formatting your code with Prettier :nail_care:
-
-By default, there are two disabled git hooks. They're set up when you run the `npm run semantic-release-prepare` script. They make sure:
- - You follow a [conventional commit message](https://github.com/conventional-changelog/conventional-changelog)
- - Your build is not going to fail in [Travis](https://travis-ci.org) (or your CI server), since it's runned locally before `git push`
-
-This makes more sense in combination with [automatic releases](#automatic-releases)
-
-### FAQ
-
-#### `Array.prototype.from`, `Promise`, `Map`... is undefined?
-
-TypeScript or Babel only provides down-emits on syntactical features (`class`, `let`, `async/await`...), but not on functional features (`Array.prototype.find`, `Set`, `Promise`...), . For that, you need Polyfills, such as [`core-js`](https://github.com/zloirock/core-js) or [`babel-polyfill`](https://babeljs.io/docs/usage/polyfill/) (which extends `core-js`).
-
-For a library, `core-js` plays very nicely, since you can import just the polyfills you need:
-
-```javascript
-import "core-js/fn/array/find"
-import "core-js/fn/string/includes"
-import "core-js/fn/promise"
-...
-```
-
-#### What is `npm install` doing on first run?
-
-It runs the script `tools/init` which sets up everything for you. In short, it:
- - Configures RollupJS for the build, which creates the bundles
- - Configures `package.json` (typings file, main file, etc)
- - Renames main src and test files
-
-#### What if I don't want git-hooks, automatic releases or semantic-release?
-
-Then you may want to:
- - Remove `commitmsg`, `postinstall` scripts from `package.json`. That will not use those git hooks to make sure you make a conventional commit
- - Remove `npm run semantic-release` from `.travis.yml`
-
-#### What if I don't want to use coveralls or report my coverage?
-
-Remove `npm run report-coverage` from `.travis.yml`
-
-## Resources
-
-- [Write a library using TypeScript library starter](https://dev.to/alexjoverm/write-a-library-using-typescript-library-starter) by [@alexjoverm](https://github.com/alexjoverm/)
-- [📺 Create a TypeScript Library using typescript-library-starter](https://egghead.io/lessons/typescript-create-a-typescript-library-using-typescript-library-starter) by [@alexjoverm](https://github.com/alexjoverm/)
-- [Introducing TypeScript Library Starter Lite](https://blog.tonysneed.com/2017/09/15/introducing-typescript-library-starter-lite/) by [@tonysneed](https://github.com/tonysneed)
-
-## Projects using `typescript-library-starter`
-
-Here are some projects that use `typescript-library-starter`:
-
-- [NOEL - A universal, human-centric, replayable event emitter](https://github.com/lifenautjoe/noel)
-- [droppable - A library to give file dropping super-powers to any HTML element.](https://github.com/lifenautjoe/droppable)
-- [redis-messaging-manager - Pubsub messaging library, using redis and rxjs](https://github.com/tomyitav/redis-messaging-manager)
-
-## Credits
-
-Made with :heart: by [@alexjoverm](https://twitter.com/alexjoverm) and all these wonderful contributors ([emoji key](https://github.com/kentcdodds/all-contributors#emoji-key)):
-
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore -->
-| [<img src="https://avatars.githubusercontent.com/u/6052309?v=3" width="100px;"/><br /><sub><b>Ciro</b></sub>](https://www.linkedin.com/in/ciro-ivan-agulló-guarinos-42109376)<br />[💻](https://github.com/alexjoverm/typescript-library-starter/commits?author=k1r0s "Code") [🔧](#tool-k1r0s "Tools") | [<img src="https://avatars.githubusercontent.com/u/947523?v=3" width="100px;"/><br /><sub><b>Marius Schulz</b></sub>](https://blog.mariusschulz.com)<br />[📖](https://github.com/alexjoverm/typescript-library-starter/commits?author=mariusschulz "Documentation") | [<img src="https://avatars.githubusercontent.com/u/4152819?v=3" width="100px;"/><br /><sub><b>Alexander Odell</b></sub>](https://github.com/alextrastero)<br />[📖](https://github.com/alexjoverm/typescript-library-starter/commits?author=alextrastero "Documentation") | [<img src="https://avatars1.githubusercontent.com/u/8728882?v=3" width="100px;"/><br /><sub><b>Ryan Ham</b></sub>](https://github.com/superamadeus)<br />[💻](https://github.com/alexjoverm/typescript-library-starter/commits?author=superamadeus "Code") | [<img src="https://avatars1.githubusercontent.com/u/8458838?v=3" width="100px;"/><br /><sub><b>Chi</b></sub>](https://consiiii.me)<br />[💻](https://github.com/alexjoverm/typescript-library-starter/commits?author=ChinW "Code") [🔧](#tool-ChinW "Tools") [📖](https://github.com/alexjoverm/typescript-library-starter/commits?author=ChinW "Documentation") | [<img src="https://avatars2.githubusercontent.com/u/2856501?v=3" width="100px;"/><br /><sub><b>Matt Mazzola</b></sub>](https://github.com/mattmazzola)<br />[💻](https://github.com/alexjoverm/typescript-library-starter/commits?author=mattmazzola "Code") [🔧](#tool-mattmazzola "Tools") | [<img src="https://avatars0.githubusercontent.com/u/2664047?v=3" width="100px;"/><br /><sub><b>Sergii Lischuk</b></sub>](http://leefrost.github.io)<br />[💻](https://github.com/alexjoverm/typescript-library-starter/commits?author=Leefrost "Code") |
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| [<img src="https://avatars1.githubusercontent.com/u/618922?v=3" width="100px;"/><br /><sub><b>Steve Lee</b></sub>](http;//opendirective.com)<br />[🔧](#tool-SteveALee "Tools") | [<img src="https://avatars0.githubusercontent.com/u/5127501?v=3" width="100px;"/><br /><sub><b>Flavio Corpa</b></sub>](http://flaviocorpa.com)<br />[💻](https://github.com/alexjoverm/typescript-library-starter/commits?author=kutyel "Code") | [<img src="https://avatars2.githubusercontent.com/u/22561997?v=3" width="100px;"/><br /><sub><b>Dom</b></sub>](https://github.com/foreggs)<br />[🔧](#tool-foreggs "Tools") | [<img src="https://avatars1.githubusercontent.com/u/755?v=4" width="100px;"/><br /><sub><b>Alex Coles</b></sub>](http://alexbcoles.com)<br />[📖](https://github.com/alexjoverm/typescript-library-starter/commits?author=myabc "Documentation") | [<img src="https://avatars2.githubusercontent.com/u/1093738?v=4" width="100px;"/><br /><sub><b>David Khourshid</b></sub>](https://github.com/davidkpiano)<br />[🔧](#tool-davidkpiano "Tools") | [<img src="https://avatars0.githubusercontent.com/u/7225802?v=4" width="100px;"/><br /><sub><b>Aarón García Hervás</b></sub>](https://aarongarciah.com)<br />[📖](https://github.com/alexjoverm/typescript-library-starter/commits?author=aarongarciah "Documentation") | [<img src="https://avatars2.githubusercontent.com/u/13683986?v=4" width="100px;"/><br /><sub><b>Jonathan Hart</b></sub>](https://www.stuajnht.co.uk)<br />[💻](https://github.com/alexjoverm/typescript-library-starter/commits?author=stuajnht "Code") |
-| [<img src="https://avatars0.githubusercontent.com/u/13509204?v=4" width="100px;"/><br /><sub><b>Sanjiv Lobo</b></sub>](https://github.com/Xndr7)<br />[📖](https://github.com/alexjoverm/typescript-library-starter/commits?author=Xndr7 "Documentation") | [<img src="https://avatars3.githubusercontent.com/u/7473800?v=4" width="100px;"/><br /><sub><b>Stefan Aleksovski</b></sub>](https://github.com/sAleksovski)<br />[💻](https://github.com/alexjoverm/typescript-library-starter/commits?author=sAleksovski "Code") | [<img src="https://avatars2.githubusercontent.com/u/8853426?v=4" width="100px;"/><br /><sub><b>dev.peerapong</b></sub>](https://github.com/devpeerapong)<br />[💻](https://github.com/alexjoverm/typescript-library-starter/commits?author=devpeerapong "Code") | [<img src="https://avatars0.githubusercontent.com/u/22260722?v=4" width="100px;"/><br /><sub><b>Aaron Groome</b></sub>](http://twitter.com/Racing5372)<br />[📖](https://github.com/alexjoverm/typescript-library-starter/commits?author=Racing5372 "Documentation") | [<img src="https://avatars3.githubusercontent.com/u/180963?v=4" width="100px;"/><br /><sub><b>Aaron Reisman</b></sub>](https://github.com/lifeiscontent)<br />[💻](https://github.com/alexjoverm/typescript-library-starter/commits?author=lifeiscontent "Code") | [<img src="https://avatars1.githubusercontent.com/u/32557482?v=4" width="100px;"/><br /><sub><b>kid-sk</b></sub>](https://github.com/kid-sk)<br />[📖](https://github.com/alexjoverm/typescript-library-starter/commits?author=kid-sk "Documentation") | [<img src="https://avatars0.githubusercontent.com/u/1503089?v=4" width="100px;"/><br /><sub><b>Andrea Gottardi</b></sub>](http://about.me/andreagot)<br />[📖](https://github.com/alexjoverm/typescript-library-starter/commits?author=AndreaGot "Documentation") |
-| [<img src="https://avatars3.githubusercontent.com/u/1375860?v=4" width="100px;"/><br /><sub><b>Yogendra Sharma</b></sub>](http://TechiesEyes.com)<br />[📖](https://github.com/alexjoverm/typescript-library-starter/commits?author=Yogendra0Sharma "Documentation") | [<img src="https://avatars3.githubusercontent.com/u/7407177?v=4" width="100px;"/><br /><sub><b>Rayan Salhab</b></sub>](http://linkedin.com/in/rayan-salhab/)<br />[💻](https://github.com/alexjoverm/typescript-library-starter/commits?author=cyphercodes "Code") |
-<!-- ALL-CONTRIBUTORS-LIST:END -->
-
-This project follows the [all-contributors](https://github.com/kentcdodds/all-contributors) specification. Contributions of any kind are welcome!
