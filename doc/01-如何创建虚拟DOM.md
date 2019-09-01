@@ -322,3 +322,9 @@ ps: 尚未验证（运行）上述代码，后期将进行验证。
 ## 系列文章
 
 [【Ts重构Vue】00-Ts重构Vue前言](https://juejin.im/post/5d64ad8bf265da039135247b)
+
+[【Ts重构Vue】01-如何创建虚拟节点](https://juejin.im/post/5d638c1a6fb9a06aff5e7e57)
+
+[【Ts重构Vue】02-数据如何驱动视图变化](https://juejin.im/post/5d637ebc6fb9a06ad45151a7)
+
+[【Ts重构Vue】03-如何给真实DOM设置样式](https://juejin.im/post/5d639eeff265da0394021683)

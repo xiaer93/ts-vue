@@ -73,7 +73,7 @@ function patch(oldVnode: VNode | null, vnode: VNode | null) {
   }
 
   if (isSameVnode(oldVnode, vnode)) {
-    patchNode(oldVnode, vnode)
+    patchVnode(oldVnode, vnode)
   } else {
     webMethods.remove(parentElm, oldVnode.elm!)
     webMethods.append(parentElm, createElm(vnode))
@@ -87,7 +87,7 @@ function patch(oldVnode: VNode | null, vnode: VNode | null) {
 /**
  * 比较相同节点(标签相同)
  */
-function patchNode(oldVnode: VNode, vnode: VNode) {
+function patchVnode(oldVnode: VNode, vnode: VNode) {
   let i: any
   const data = vnode.data,
     oldCh = oldVnode.children,
@@ -149,15 +149,15 @@ function updateChildren(parentElm: Node, oldCh: Array<VNode>, ch: Array<VNode>) 
     }
     // 判断逻辑
     else if (isSameVnode(oldStartVnode, newStartVnode)) {
-      patchNode(oldStartVnode, newStartVnode)
+      patchVnode(oldStartVnode, newStartVnode)
       oldStartVnode = oldCh[++oldStart]
       newStartVnode = ch[++newStart]
     } else if (isSameVnode(oldEndVnode, newEndVnode)) {
-      patchNode(oldEndVnode, newEndVnode)
+      patchVnode(oldEndVnode, newEndVnode)
       oldEndVnode = oldCh[--oldEnd]
       newEndVnode = ch[--newEnd]
     } else if (isSameVnode(oldStartVnode, newEndVnode)) {
-      patchNode(oldStartVnode, newEndVnode)
+      patchVnode(oldStartVnode, newEndVnode)
       webMethods.insertBefore(
         parentElm,
         oldStartVnode.elm!,
@@ -166,7 +166,7 @@ function updateChildren(parentElm: Node, oldCh: Array<VNode>, ch: Array<VNode>) 
       oldStartVnode = oldCh[++oldStart]
       newEndVnode = ch[--newEnd]
     } else if (isSameVnode(oldEndVnode, newStartVnode)) {
-      patchNode(oldEndVnode, newStartVnode)
+      patchVnode(oldEndVnode, newStartVnode)
       webMethods.insertBefore(parentElm, oldEndVnode.elm!, oldStartVnode.elm!)
       oldEndVnode = oldCh[--oldEnd]
       newStartVnode = ch[++newStart]

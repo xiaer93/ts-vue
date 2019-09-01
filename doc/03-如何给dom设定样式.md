@@ -2,9 +2,7 @@
 
 Vue支持动态style和class，如：`<div :class="{active: false}" :style="{color: "red"}"></div>`，如何对将其他属性映射至真实DOM的操作？
 
-## 动态style
-
-观察下述代码，通过修改`v.color="#000"`，可以更改字体的颜色。如何实现动态样式的功能？
+我们的编码目标是下面的demo能够成功渲染。
 
 ```
 let v = new Vue({
@@ -25,9 +23,15 @@ setTimeout(() => {
 
 ```
 
+## 回顾虚拟节点映射过程
+
 前面分析了虚拟DOM映射为真实DOM的过程，是否可以在映射过程将动态样式更新到真实DOM上？
 
-以patchNode方法为例，在方法执行过程中，在不同时期会执行hook函数，如`invokeVnodeHooks(oldVnode, vnode, 'prepatch')`会执行prepatch钩子函数，在钩子函数中进而可以在真实dom上进行各种操作。
+图片
+
+我们在映射过程中添加hook，以patchNode方法为例，在方法执行过程中，在不同时期会执行hook函数，如`invokeVnodeHooks(oldVnode, vnode, 'prepatch')`会执行prepatch钩子函数，在钩子函数中进而可以在真实dom上进行各种操作。
+
+
 
 VNode的钩子有：create、destroy、insert、remove、update、prepatch、postpatch、init
 
