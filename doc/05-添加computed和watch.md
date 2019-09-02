@@ -1,41 +1,41 @@
 # 如何创建computed和watch？
 
+在项目中computed和watch还是非常实用的，它们是如何实现的呢？
 
-## 需求
-
-监听v.news的变化，重新计算newsStr的值，如果变化则驱动视图的更新。
+我们的编码目标是下面的demo能够成功渲染，最终渲染结果`<h1>未读消息：2</h1>`。
 
 ```
 let v = new Vue({
   el: '#app',
   data () {
     return  {
-        news: [1]
+      news: [1]
     }
   },
   computed: {
-    newsStr() {
-      return this.news.length.toString()
+    newsCount() {
+      return this.news.length
     },
   },
   render (h) {
-    return h('h1',  '未读消息：' + this.newsStr)
+    return h('h1',  '未读消息：' + this.newsCount)
   }
 })
-
 
 setTimeout(() => {
     v.news.push(2)
 }, 1000)
 ```
 
-## 
+## Vue响应式原理
 
-computed和watch定义的函数，本身会依赖于props或者data，因此需要创建watch，监听依赖的变化。同时computed的数据如果被render调用，则其也需要为自己创建依赖，变化后通知render重新渲染。另外，computed具有缓存特性，能够提高性能）
+[图片]
 
-## computed的实现
+## 实现computed
 
-创建watch，同时也将自己定为依赖。
+computed属性比较特殊，其依赖其他数据属性，同时其自身也会驱动视图变化。
+
+首先创建一个watch实例，监听computed函数中的数据，`new Watch(vm._proxyThis, getter, noop, {lazy: true})`。数据属性变化会触发getter执行，
 
 ```
 function initComputed(vm: Vue) {
@@ -74,7 +74,12 @@ function observeComputed(obj: VueComputed, _computedWatched: any, proxyThis: any
 
   return proxyObj
 }
+```
 
+接着将computed属性本身设置为响应式。调用`createComputedGetter`对属性进行封装，每次获取computed属性，实质上就是执行一次computed函数。
+
+设置set，方便注入`computed:{news: {set: , get}}`形式，当调用set函数时可以触发更新。
+```
 function defineComputed(
   obj: any,
   key: string,
@@ -122,7 +127,9 @@ function createComputedGetter(watcher: Watch): Function {
 }
 ```
 
-## watch实现
+computed的缓存特性？
+
+## 实现watch
 
 watch实现较为简单，只需要为自己创建watch，监听依赖的变化即可。
 
@@ -136,6 +143,11 @@ function initWatch(vm: Vue) {
 }
 
 ```
+
+## Vue的实现流程
+
+initComputed
+initWatch
 
 ## 总结
 
